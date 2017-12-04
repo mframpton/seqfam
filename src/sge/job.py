@@ -19,8 +19,8 @@ def make_all_job_scripts(scripts_dir, job_name_l, job_script_l, cmd_l, merge_cmd
 	for i in xrange(len(job_name_l)):
 		make_job_script(job_script_l[i], job_name_l[i], cmd_l[i])
 	master_script_stream = open(os.path.join(scripts_dir,"run_all_jobs.sh"), 'w')
-        master_script_stream.write("#!/bin/bash\n\n")
-        for i in xrange(len(job_name_l)):
+   	master_script_stream.write("#!/bin/bash\n\n")
+   	for i in xrange(len(job_name_l)):
 		master_script_stream.write("qsub -N " + job_name_l[i] + " -cwd " + job_script_l[i] + "\n")
 	if merge_cmd != None:
 		make_job_script(os.path.join(scripts_dir,"merge_results.sh"), "merge", merge_cmd)
@@ -30,23 +30,23 @@ def make_all_job_scripts(scripts_dir, job_name_l, job_script_l, cmd_l, merge_cmd
 
 def make_job_script(job_script, job_name, command, mem="14G"):
 
-        job_stream = open(job_script, 'w')
-        job_stream.write("#!/bin/bash\n")
-        job_stream.write("#$ -S /bin/bash\n")
-        job_stream.write("#$ -o /dev/null\n")
-        job_stream.write("#$ -e /dev/null\n")
-        job_stream.write("#$ -cwd\n")
-        job_stream.write("#$ -V\n")
-        job_stream.write("#$ -l tmem="+mem+",h_vmem="+mem+"\n")
-	#job_stream.write("#$ -l tmem=14G,h_vmem=14G\n")
-        job_stream.write("#$ -l h_rt=24:0:0\n")
-        job_stream.write("set -u\n")
-        job_stream.write("set -x\n\n")
-        job_stream.write("scriptname=" + job_name + "\n")
-        job_stream.write("mkdir -p ${scriptname}.qsub.out ${scriptname}.qsub.err\n")
-        job_stream.write("exec >${scriptname}.qsub.out/${scriptname}_${JOB_ID}.out 2>${scriptname}.qsub.err/${scriptname}_${JOB_ID}.err\n\n")
-        job_stream.write(command + "\n")
-        job_stream.close()
+    job_stream = open(job_script, 'w')
+    job_stream.write("#!/bin/bash\n")
+    job_stream.write("#$ -S /bin/bash\n")
+    job_stream.write("#$ -o /dev/null\n")
+    job_stream.write("#$ -e /dev/null\n")
+    job_stream.write("#$ -cwd\n")
+    job_stream.write("#$ -V\n")
+    job_stream.write("#$ -l tmem="+mem+",h_vmem="+mem+"\n")
+#job_stream.write("#$ -l tmem=14G,h_vmem=14G\n")
+    job_stream.write("#$ -l h_rt=24:0:0\n")
+    job_stream.write("set -u\n")
+    job_stream.write("set -x\n\n")
+    job_stream.write("scriptname=" + job_name + "\n")
+    job_stream.write("mkdir -p ${scriptname}.qsub.out ${scriptname}.qsub.err\n")
+    job_stream.write("exec >${scriptname}.qsub.out/${scriptname}_${JOB_ID}.out 2>${scriptname}.qsub.err/${scriptname}_${JOB_ID}.err\n\n")
+    job_stream.write(command + "\n")
+    job_stream.close()
 
 
 def merge_results(data_dir, in_file_pat, out_file_prefix, index_col_l, skiprows=1, sep=",", concat_axis=0, sort_col_l=None, sort_col_numeric_l=None, descending=False, out_compression=False, write=True):
@@ -60,7 +60,7 @@ def merge_results(data_dir, in_file_pat, out_file_prefix, index_col_l, skiprows=
 	for csv in csv_l:
 		print csv
 		this_df = pd.read_csv(csv, skiprows=skiprows, index_col=index_col_l, dtype="str", na_filter=False, sep=sep)
-                #print this_df.head()
+        #print this_df.head()
 		if this_df.empty:
 			continue
 		df_l += [this_df]
@@ -92,7 +92,7 @@ def make_map_reduce_jobs(scripts_dir, prep, map_task_l, reduce_task, map_task_ex
 
 	'''Delete existing .sh files in the scripts dir.'''
 	for f in glob.glob(os.path.join(scripts_dir,"*.sh")):
-    		os.remove(f)
+    	os.remove(f)
 
 	'''Make map.sh'''
 	map_file = os.path.join(scripts_dir,".".join([prep,"map","sh"]))
