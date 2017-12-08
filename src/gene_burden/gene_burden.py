@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import statsmodels.discrete.discrete_model as sm
+from scipy import stats
+stats.chisqprob = lambda chisq, df: stats.chi2.sf(chisq, df)
 
 
 class CMC(object):
@@ -12,6 +15,24 @@ class CMC(object):
         self.frq_grp_name_l=frq_grp_name_l
         self.frq_grp_range_ll=frq_grp_range_ll
     
+    
+    def do_multivariate_tests(self, geno_df):
+       
+        geno_collapsed_df = self.get_geno_collapsed_df(geno_df)
+        y = np.array([1 if sample in self.sample_dict["case"] else 0 for sample in self.sample_dict["all"]])
+        result_s = geno_collapsed_df[self.sample_dict["all"]].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=y)
+        return result_s
+    
+       
+    def do_multivariate_test(self, geno_collapsed_gene_df, y):
+       
+        #print geno_collapsed_gene_df.name
+        X = np.transpose(geno_collapsed_gene_df.values)
+        #print np.all(X==0)
+        logit_model=sm.Logit(y,X)
+        result=logit_model.fit(method='bfgs')
+        return result.llr_pvalue
+       
        
     def get_geno_collapsed_df(self, geno_df):
         
