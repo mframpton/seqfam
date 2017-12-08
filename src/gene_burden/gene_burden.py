@@ -3,6 +3,7 @@ import numpy as np
 import statsmodels.discrete.discrete_model as sm
 from scipy import stats
 stats.chisqprob = lambda chisq, df: stats.chi2.sf(chisq, df)
+import sys
 
 
 class CMC(object):
@@ -16,24 +17,22 @@ class CMC(object):
         self.frq_grp_range_ll=frq_grp_range_ll
     
     
-    def do_multivariate_tests(self, geno_df):
-       
+    def do_multivariate_tests(self, geno_df, covar_df):
+        
+        #Collapse the genotypes.
+        print "Collapsing genotypes..."
         geno_collapsed_df = self.get_geno_collapsed_df(geno_df)
+        #Do the multivariate tests.
+        print "Doing multivariate tests..."
         y = np.array([1 if sample in self.sample_dict["case"] else 0 for sample in self.sample_dict["all"]])
-        result_s = geno_collapsed_df[self.sample_dict["all"]].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=y)
-        return result_s
+        result_df = geno_collapsed_df[self.sample_dict["all"]].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=y, covar_df=covar_df)
+        #Merge the results with the collapsed variant counts.
+        print "Merge the results with the collapsed variant counts..."
+        collapsed_var_count_df = self.get_collapsed_var_count_df(geno_collapsed_df)
+        result_df = collapsed_var_count_df.join(result_df)
+        return result_df
     
-       
-    def do_multivariate_test(self, geno_collapsed_gene_df, y):
-       
-        #print geno_collapsed_gene_df.name
-        X = np.transpose(geno_collapsed_gene_df.values)
-        #print np.all(X==0)
-        logit_model=sm.Logit(y,X)
-        result=logit_model.fit(method='bfgs')
-        return result.llr_pvalue
-       
-       
+    
     def get_geno_collapsed_df(self, geno_df):
         
         geno_df[self.frq_col_l] = geno_df[self.frq_col_l].apply(pd.to_numeric, axis=1)
@@ -74,3 +73,49 @@ class CMC(object):
                 return 1
         else:
                 return 0
+    
+    
+    def do_multivariate_test(self, geno_collapsed_gene_df, y, covar_df=None):
+        
+        return_data_l,return_index_l = [],[]
+        
+        [degf,llf,llr_p] = self.fit_logit_model(geno_collapsed_gene_df,y)
+        return_data_l.append(llr_p)
+        return_index_l.append("llr_p")
+        
+        if covar_df is not None:
+            '''Model with only covariates'''
+            [h0_degf,h0_llf,h0_llr_p] = self.fit_logit_model(covar_df,y)
+            '''Model with covariates plus collapsed variant independent variables.'''
+            [h1_degf,h1_llf,h1_llr_p] = self.fit_logit_model(pd.concat([geno_collapsed_gene_df, covar_df]),y)
+            #print h0_llf,h1_llf,h0_degf,h1_degf,2*(h1_llf-h0_llf),h1_degf-h0_degf
+            llr_cov_p = stats.chisqprob(2*(h1_llf-h0_llf),h1_degf-h0_degf)
+            return_data_l.append(llr_cov_p)
+            return_index_l.append("llr_cov_p")
+            
+        return pd.Series(data=return_data_l, index=return_index_l) 
+
+    
+    def fit_logit_model(self, X_df, y):
+        
+        X = np.transpose(X_df.values)
+        logit_model = sm.Logit(y,X)
+        result = logit_model.fit(method='bfgs')
+        degf = result.df_model
+        llf = result.llf
+        llr_p = result.llr_pvalue
+        return [degf,llf,llr_p]
+    
+    
+    def get_collapsed_var_count_df(self, geno_collapsed_df):
+        
+        collapsed_var_count_df = geno_collapsed_df['n'].reset_index()
+        collapsed_var_count_df["collapsed_var"] = collapsed_var_count_df["collapsed_var"].apply(lambda x: x if x in self.frq_grp_name_l else "other")
+        collapsed_var_count_df = pd.pivot_table(data=collapsed_var_count_df, values='n', index=self.gene_col, columns='collapsed_var')
+        collapsed_var_count_col_l = collapsed_var_count_df.columns.tolist()
+        collapsed_var_count_col_l.sort(key = lambda x: len(self.frq_grp_name_l) if x=="other" else self.frq_grp_name_l.index(x))
+        collapsed_var_count_df = collapsed_var_count_df.reindex(columns=collapsed_var_count_col_l)
+        collapsed_var_count_df.fillna(0, inplace=True)
+        collapsed_var_count_df = collapsed_var_count_df.apply(pd.to_numeric, downcast='integer', axis=1)
+        return collapsed_var_count_df
+    
