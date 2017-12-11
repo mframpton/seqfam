@@ -1,5 +1,5 @@
 import os
-from sge.sge import SGE
+from cohpy.sge import SGE
 import sys
 
 

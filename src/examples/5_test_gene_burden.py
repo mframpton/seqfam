@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 import os
-from gene_burden.gene_burden import CMC
+from cohpy.gene_burden import CMC
 
 
 '''Read in the genotype file.'''

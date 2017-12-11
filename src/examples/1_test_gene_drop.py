@@ -1,6 +1,6 @@
 import os
 import sys
-from gene_drop.gene_drop import Cohort
+from cohpy.gene_drop import Cohort
 
 
 data_dir = os.path.join("..","..","data","gene_drop")
