@@ -11,7 +11,7 @@ from collections import OrderedDict
 
 class CMC(object):
     
-    def __init__(self, sample_dict, gene_col, frq_col_l, pop_frq_grp_dict={"rare":0.01,"mod_rare":0.05}):
+    def __init__(self, sample_dict, gene_col, frq_col_l, pop_frq_grp_dict={"vrare":0.001,"rare":0.01,"mod_rare":0.05}):
     
         self.logger = Logger()    
         self.sample_dict = sample_dict
@@ -23,6 +23,7 @@ class CMC(object):
     
     
     def do_multivariate_tests(self, geno_df, covar_df):
+        '''Main method for doing multivariate tests.'''
         
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes to test: {0} ".format(len(pd.unique(geno_df[self.gene_col]))))
@@ -41,7 +42,7 @@ class CMC(object):
     
     
     def get_geno_collapsed_df(self, geno_df):
-        '''Main method for making new dataframe with collapsed genotypes.'''
+        '''Main method for making aggregating genotypes within population frequency categories.'''
         
         geno_df[self.frq_col_l] = geno_df[self.frq_col_l].apply(pd.to_numeric, axis=1)
         geno_df[self.sample_dict["all"]] = geno_df[self.sample_dict["all"]].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
@@ -51,6 +52,7 @@ class CMC(object):
     
         
     def collapse_vars_in_frq_ranges(self, geno_df):
+        '''Aggregate genotypes within population frequency categories.'''
 
         self.logger.log("Assign variants to a population frequency group.")
         pop_frq_s = geno_df.apply(lambda row_s: filter(lambda x: np.isnan(x) == False, row_s.ix[self.frq_col_l].tolist()+[0.0])[0],axis=1)
@@ -75,6 +77,7 @@ class CMC(object):
        
     
     def do_multivariate_test(self, geno_collapsed_gene_df, y, covar_df=None):
+        '''Do a multivariate test for 1 gene.'''
         
         return_data_l,return_index_l = [],[]
         
@@ -96,6 +99,7 @@ class CMC(object):
 
     
     def fit_logit_model(self, X_df, y):
+        '''Fit a logit model.'''
         
         X = np.transpose(X_df.values)
         logit_model = sm.Logit(y,X)
@@ -107,6 +111,7 @@ class CMC(object):
     
     
     def get_collapsed_var_count_df(self, geno_collapsed_df):
+        '''For each gene, get the number of variants in each population frequency category.'''
         
         collapsed_var_count_df = geno_collapsed_df['n'].reset_index()
         collapsed_var_count_df["collapsed_var"] = collapsed_var_count_df["collapsed_var"].apply(lambda x: x if x in self.pop_frq_grp_name_l else "uncollapsed")
