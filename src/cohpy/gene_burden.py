@@ -21,6 +21,8 @@ class CMC(object):
     
     def do_multivariate_tests(self, geno_df, covar_df):
         
+        self.logger.log("# variants: {0}".format(len(geno_df.index)))
+        self.logger.log("# genes to test: {0} ".format(len(pd.unique(geno_df[self.gene_col]))))
         #Collapse the genotypes.
         self.logger.log("Collapsing genotypes...")
         geno_collapsed_df = self.get_geno_collapsed_df(geno_df)
@@ -38,15 +40,22 @@ class CMC(object):
     def get_geno_collapsed_df(self, geno_df):
         
         geno_df[self.frq_col_l] = geno_df[self.frq_col_l].apply(pd.to_numeric, axis=1)
+        geno_df[self.sample_dict["all"]] = geno_df[self.sample_dict["all"]].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
+        geno_df[self.sample_dict["all"]].fillna(0, inplace=True)
         geno_collapsed_df = self.collapse_vars_in_frq_ranges(geno_df=geno_df)
         return geno_collapsed_df
     
         
     def collapse_vars_in_frq_ranges(self, geno_df):
 
+        self.logger.log("Assign variants to a population frequency group.")
         geno_df["collapsed_var"] = geno_df.apply(axis=1, func=self.assign_collapse_group)
+        self.logger.log("For each gene, count the # of variants in each population frequency category.")
         collapse_group_n_df = geno_df.groupby(self.gene_col)["collapsed_var"].value_counts().to_frame("n")
+        self.logger.log("In each gene, aggregate sample genotypes by variant population frequency group.")
         geno_collapsed_df = geno_df.groupby([self.gene_col] + ["collapsed_var"]).apply(func=self.collapse_vars_in_samples)
+        #print geno_collapsed_df[self.sample_dict["all"][:2]].to_string()
+        #sys.exit()
         geno_collapsed_df = geno_collapsed_df.merge(collapse_group_n_df, left_index=True, right_index=True)
         return geno_collapsed_df
 
@@ -60,22 +69,12 @@ class CMC(object):
                 return self.frq_grp_name_l[i]
         return geno_s.name
 
-
-    def collapse_vars_in_samples(self, gene_trans_group_df):   
-        
-        return gene_trans_group_df.ix[:,self.sample_dict["all"]].apply(axis=0, func=self.collapse_vars_in_1_sample)
-
-
-    def collapse_vars_in_1_sample(self, sample_geno_s):
-        
-        geno_count_s = sample_geno_s.value_counts()
-        if "1" in geno_count_s.index and geno_count_s.ix["1"] > 0:
-                return 1
-        elif "2" in geno_count_s.index and geno_count_s.ix["2"] > 0:
-                return 1
-        else:
-                return 0
     
+    def collapse_vars_in_samples(self, gene_pop_frq_group_df):
+        '''For each sample, aggregate the genotypes of variants in a "gene - pop-freq-cat" group.'''
+
+        return gene_pop_frq_group_df[self.sample_dict["all"]].apply(lambda col_s: 1 if col_s.sum() > 0 else 0, axis=0)
+       
     
     def do_multivariate_test(self, geno_collapsed_gene_df, y, covar_df=None):
         
