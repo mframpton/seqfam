@@ -11,42 +11,61 @@ from collections import OrderedDict
 
 class CMC(object):
     
-    def __init__(self, sample_dict, gene_col, frq_col_l, pop_frq_grp_dict={"vrare":0.001,"rare":0.01,"mod_rare":0.05}):
+    def __init__(self):
     
-        self.logger = Logger()    
-        self.sample_dict = sample_dict
+        self.logger = Logger()
+        self.sample_s = None
+        self.variant_col = None
+        self.gene_col = None
+        self.pop_frq_col_l = None
+        self.pop_frq_grp_name_l = None
+        self.pop_frq_bin_arr = None
+    
+    
+    def do_multivariate_tests(self, samples_path, genotypes_path, variant_col="VARIANT_ID", gene_col="gene_transcript",
+                              pop_frq_col_l=["BroadAJcontrols_ALT","gnomad_AF_NFE","EXAC_NFE"], pop_frq_grp_dict={"rare":0.01,"mod_rare":0.05},
+                              covariates_path=None, results_path=None):
+        '''Main method for doing multivariate tests.'''
+        
+        #Set object attributes.
+        self.variant_col = variant_col
         self.gene_col = gene_col
-        self.frq_col_l = frq_col_l
+        self.pop_frq_col_l = pop_frq_col_l
         pop_frq_grp_dict = OrderedDict(sorted(pop_frq_grp_dict.items(),key=operator.itemgetter(1)))
         self.pop_frq_grp_name_l = pop_frq_grp_dict.keys()
         self.pop_frq_bin_arr = np.array(pop_frq_grp_dict.values())
-    
-    
-    def do_multivariate_tests(self, geno_df, covar_df):
-        '''Main method for doing multivariate tests.'''
-        
+        #Read in samples, genotypes and covariates.
+        self.logger.log("Reading in samples and annotated genotypes...")
+        self.sample_s = pd.read_csv(samples_path, dtype=str, index_col="Sample ID")
+        self.sample_s["Affection"] = self.sample_s["Affection"].astype(int)
+        self.sample_s = self.sample_s[self.sample_s != 0]
+        geno_df = pd.read_csv(genotypes_path, dtype=str, usecols=[self.gene_col] + self.pop_frq_col_l + self.sample_s.index.tolist())
+        covar_df = None if covariates_path == None else pd.read_csv(covariates_path, index_col=0)
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
-        self.logger.log("# genes to test: {0} ".format(len(pd.unique(geno_df[self.gene_col]))))
-        #Collapse the genotypes.
-        self.logger.log("Collapsing genotypes...")
+        self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.gene_col]))))
+        #Aggregate the genotypes.
+        self.logger.log("Aggregating genotypes...")
         geno_collapsed_df = self.get_geno_collapsed_df(geno_df)
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
-        y = np.array([1 if sample in self.sample_dict["case"] else 0 for sample in self.sample_dict["all"]])
-        result_df = geno_collapsed_df[self.sample_dict["all"]].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=y, covar_df=covar_df)
+        y = self.sample_s.values-1
+        result_df = geno_collapsed_df[self.sample_s.index.tolist()].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=y, covar_df=covar_df)
         #Merge the results with the collapsed variant counts.
         self.logger.log("Merge the results with the collapsed variant counts...")
         collapsed_var_count_df = self.get_collapsed_var_count_df(geno_collapsed_df)
         result_df = collapsed_var_count_df.join(result_df)
+        result_df.sort_values(by="llr_cov_p", inplace=True)
+        self.logger.log("Write results.")
+        result_df.to_csv(results_path, index=True)
         return result_df
     
     
     def get_geno_collapsed_df(self, geno_df):
         '''Main method for making aggregating genotypes within population frequency categories.'''
         
-        geno_df[self.frq_col_l] = geno_df[self.frq_col_l].apply(pd.to_numeric, axis=1)
-        geno_df[self.sample_dict["all"]] = geno_df[self.sample_dict["all"]].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
-        geno_df[self.sample_dict["all"]].fillna(0, inplace=True)
+        geno_df[self.pop_frq_col_l] = geno_df[self.pop_frq_col_l].apply(pd.to_numeric, axis=1)
+        geno_df[self.sample_s.index.tolist()] = geno_df[self.sample_s.index.tolist()].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
+        geno_df[self.sample_s.index.tolist()].fillna(0, inplace=True)
         geno_collapsed_df = self.collapse_vars_in_frq_ranges(geno_df=geno_df)
         return geno_collapsed_df
     
@@ -55,7 +74,7 @@ class CMC(object):
         '''Aggregate genotypes within population frequency categories.'''
 
         self.logger.log("Assign variants to a population frequency group.")
-        pop_frq_s = geno_df.apply(lambda row_s: filter(lambda x: np.isnan(x) == False, row_s.ix[self.frq_col_l].tolist()+[0.0])[0],axis=1)
+        pop_frq_s = geno_df.apply(lambda row_s: filter(lambda x: np.isnan(x) == False, row_s.ix[self.pop_frq_col_l].tolist()+[0.0])[0],axis=1)
         pop_frq_idx_arr = np.digitize(pop_frq_s.values,self.pop_frq_bin_arr)
         geno_df = geno_df.join(pd.Series(data=pop_frq_idx_arr, index=pop_frq_s.index, name="pop_frq_cat_idx"))
         geno_df["collapsed_var"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == len(self.pop_frq_grp_name_l) else self.pop_frq_grp_name_l[row_s["pop_frq_cat_idx"]], axis=1)
@@ -73,8 +92,8 @@ class CMC(object):
     def collapse_vars_in_samples(self, gene_pop_frq_group_df):
         '''For each sample, aggregate the genotypes of variants in a "gene - pop-freq-cat" group.'''
 
-        return gene_pop_frq_group_df[self.sample_dict["all"]].apply(lambda col_s: 1 if col_s.sum() > 0 else 0, axis=0)
-       
+        return gene_pop_frq_group_df[self.sample_s.index.tolist()].apply(lambda col_s: 1 if col_s.sum() > 0 else 0, axis=0)
+    
     
     def do_multivariate_test(self, geno_collapsed_gene_df, y, covar_df=None):
         '''Do a multivariate test for 1 gene.'''
