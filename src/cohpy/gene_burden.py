@@ -77,7 +77,14 @@ class CMC(object):
     
     
     def aggregate_in_var_pop_frq_cats(self, geno_df):
-        '''Aggregate genotypes within variant population frequency categories.'''
+        '''Aggregate genotypes within variant population frequency categories.
+        
+        Args:
+            geno_df (DataFrame): contains the sample genotypes, variant identifier, gene identifier and population frequencies.
+            
+        Returns:
+            geno_aggregated_df (DataFrame): contains the genotypes aggregated within variant population frequency categories.
+        '''
 
         self.logger.log("Assign variants to a population frequency group.")
         pop_frq_s = geno_df.apply(lambda row_s: filter(lambda x: np.isnan(x) == False, row_s.ix[self.pop_frq_col_l].tolist()+[0.0])[0],axis=1)
@@ -86,17 +93,27 @@ class CMC(object):
         geno_df["pop_frq_cat"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == len(self.pop_frq_cat_l) else self.pop_frq_cat_l[row_s["pop_frq_cat_idx"]], axis=1)
         geno_df.drop("pop_frq_cat_idx", inplace=True, axis=1)
         self.logger.log("For each gene, count the # of variants in each population frequency category.")
-        pop_frq_cat_n_df = geno_df.groupby(self.gene_col)["pop_frq_cat"].value_counts().to_frame("n")
+        pop_frq_cat_n_s = geno_df.groupby(self.gene_col)["pop_frq_cat"].value_counts()
+        pop_frq_cat_n_s.name = "n"
         self.logger.log("In each gene, aggregate sample genotypes by variant population frequency group.")
         geno_aggregated_df = geno_df.groupby([self.gene_col] + ["pop_frq_cat"])[self.sample_s.index].apply(lambda geno_col: geno_col.any() > 0).astype(int)
         #print geno_aggregated_df[self.sample_s.index.tolist()[:2]].to_string()
         #sys.exit()
-        geno_aggregated_df = geno_aggregated_df.merge(pop_frq_cat_n_df, left_index=True, right_index=True)
+        geno_aggregated_df = geno_aggregated_df.join(pop_frq_cat_n_s)
         return geno_aggregated_df
     
     
     def do_multivariate_test(self, geno_aggregated_gene_df, y, covar_df=None):
-        '''Do a multivariate test for 1 gene.'''
+        '''Do a multivariate test for 1 gene.
+        
+        Args:
+            geno_aggregated_gene_df (DataFrame): contains the genotypes for 1 gene aggregated in variant population frequency categories.
+            y (numpy.ndarray): affection status where 1=affected and 0=unaffected. 
+            covar_df (DataFrame): contains the covariates. 
+            
+        Returns:
+            test_result_s (Series): contains the multivariate test results.
+        '''
         
         return_data_l,return_index_l = [],[]
         
@@ -118,7 +135,14 @@ class CMC(object):
 
     
     def fit_logit_model(self, X_df, y):
-        '''Fit a logit model.'''
+        '''Fit a logit model.
+        
+        Args:
+            X_df: the independent variables (covariates and or aggregated genotypes) for 1 gene. 
+            y (numpy.ndarray): sample affection status where 1=affected and 0=unaffected. 
+        Returns:
+            result_l (list of int and 2 floats): degrees of freedom, log-likelihood and log-likelihood ratio p-value. 
+        '''
         
         X = np.transpose(X_df.values)
         logit_model = sm.Logit(y,X)
@@ -130,7 +154,14 @@ class CMC(object):
     
     
     def get_pop_frq_cat_count_df(self, geno_aggregated_df):
-        '''For each gene, get the number of variants in each population frequency category.'''
+        '''For each gene, get the number of variants in each population frequency category.
+        
+        Args:
+            geno_aggregated_df (DataFrame): contains the genotypes aggregated in variant population frequency categories in each gene.
+            
+        Returns:
+            pop_frq_cat_count_df (DataFrame): contains the number of variants in each population frequency category in each gene.
+        '''
         
         pop_frq_cat_count_df = geno_aggregated_df['n'].reset_index()
         pop_frq_cat_count_df["pop_frq_cat"] = pop_frq_cat_count_df["pop_frq_cat"].apply(lambda x: x if x in self.pop_frq_cat_l else "unagg")
