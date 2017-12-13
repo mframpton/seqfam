@@ -12,3 +12,4 @@ results_path = os.path.join(data_dir,".".join(["cmc","results","csv"]))
 '''Do gene burden (CMC) tests.'''
 cmc = CMC()
 cmc_result_df = cmc.do_multivariate_tests(samples_path, genotypes_path, covariates_path=covariates_path, results_path=results_path)
+print cmc_result_df
