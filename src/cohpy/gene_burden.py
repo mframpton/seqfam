@@ -55,17 +55,17 @@ class CMC(object):
         self.sample_s = self.sample_s[self.sample_s != 0]
         geno_df = pd.read_csv(genotypes_path, dtype=str, usecols=[self.variant_col,self.gene_col] + self.pop_frq_col_l + self.sample_s.index.tolist(), index_col=self.variant_col)
         geno_df[self.pop_frq_col_l] = geno_df[self.pop_frq_col_l].apply(pd.to_numeric, axis=1)
-        geno_df[self.sample_s.index.tolist()] = geno_df[self.sample_s.index.tolist()].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
-        geno_df[self.sample_s.index.tolist()].fillna(0, inplace=True)
+        geno_df[self.sample_s.index] = geno_df[self.sample_s.index].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
+        geno_df[self.sample_s.index].fillna(0, inplace=True)
         covar_df = None if covariates_path == None else pd.read_csv(covariates_path, index_col=0)
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.gene_col]))))
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
-        geno_aggregated_df = self.aggregate_in_var_pop_frq_cats(geno_df=geno_df)
+        geno_aggregated_df = self.aggregate_in_var_pop_frq_cats(geno_df)
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
-        result_df = geno_aggregated_df[self.sample_s.index.tolist()].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
+        result_df = geno_aggregated_df[self.sample_s.index].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
         #Merge the results with the collapsed variant counts.
         self.logger.log("Merge the results with the population frequency variant category counts...")
         pop_frq_cat_count_df = self.get_pop_frq_cat_count_df(geno_aggregated_df)
@@ -115,24 +115,23 @@ class CMC(object):
             test_result_s (Series): contains the multivariate test results.
         '''
         
-        return_data_l,return_index_l = [],[]
-        
-        [degf,llf,llr_p] = self.fit_logit_model(geno_aggregated_gene_df,y)
-        return_data_l.append(llr_p)
-        return_index_l.append("llr_p")
-        
+        geno_aggregated_gene_df.index = geno_aggregated_gene_df.index.droplevel() #Drop the gene name so it won't be in the pop frq cat variable names.
+        logit_result = self.fit_logit_model(geno_aggregated_gene_df,y)
+        test_result_l = [("llr_p",logit_result.llr_pvalue)]
         if covar_df is not None:
             '''Model with only covariates'''
-            [h0_degf,h0_llf,h0_llr_p] = self.fit_logit_model(covar_df,y)
+            logit_result_h0 = self.fit_logit_model(covar_df,y)
             '''Model with covariates plus aggregated variant independent variables.'''
-            [h1_degf,h1_llf,h1_llr_p] = self.fit_logit_model(pd.concat([geno_aggregated_gene_df, covar_df]),y)
-            #print h0_llf,h1_llf,h0_degf,h1_degf,2*(h1_llf-h0_llf),h1_degf-h0_degf
-            llr_cov_p = stats.chisqprob(2*(h1_llf-h0_llf),h1_degf-h0_degf)
-            return_data_l.append(llr_cov_p)
-            return_index_l.append("llr_cov_p")
-            
-        return pd.Series(data=return_data_l, index=return_index_l) 
-
+            logit_result_h1 = self.fit_logit_model(pd.concat([covar_df, geno_aggregated_gene_df]),y)
+            llr_cov_p = stats.chisqprob(2*(logit_result_h1.llf - logit_result_h0.llf), logit_result_h1.df_model - logit_result_h0.df_model)
+            test_result_l.append(("llr_cov_p",llr_cov_p))
+            h1_coef_l = [(pop_frq_cat+"_c",logit_result_h1.params.loc[pop_frq_cat]) if pop_frq_cat in logit_result_h1.params.index else (pop_frq_cat+"_c",np.NaN) for pop_frq_cat in self.pop_frq_cat_l]
+            h1_pval_l = [(pop_frq_cat+"_p",logit_result_h1.pvalues.loc[pop_frq_cat]) if pop_frq_cat in logit_result_h1.pvalues.index else (pop_frq_cat+"_p",np.NaN) for pop_frq_cat in self.pop_frq_cat_l]
+            h1_coef_pval_l = [item for sublist in zip(h1_coef_l,h1_pval_l) for item in sublist]
+            test_result_l.extend(h1_coef_pval_l)
+        test_result_s = pd.Series(OrderedDict(test_result_l))
+        return test_result_s
+    
     
     def fit_logit_model(self, X_df, y):
         '''Fit a logit model.
@@ -141,16 +140,12 @@ class CMC(object):
             X_df: the independent variables (covariates and or aggregated genotypes) for 1 gene. 
             y (numpy.ndarray): sample affection status where 1=affected and 0=unaffected. 
         Returns:
-            result_l (list of int and 2 floats): degrees of freedom, log-likelihood and log-likelihood ratio p-value. 
+            logit_result (statsmodels.discrete.discrete_model.BinaryResultsWrapper): contains results from fitting logit regression model.
         '''
         
-        X = np.transpose(X_df.values)
-        logit_model = sm.Logit(y,X)
-        result = logit_model.fit(method='bfgs')
-        degf = result.df_model
-        llf = result.llf
-        llr_p = result.llr_pvalue
-        return [degf,llf,llr_p]
+        logit_model = sm.Logit(y,X_df.transpose())
+        logit_result = logit_model.fit(method='bfgs')
+        return logit_result
     
     
     def get_pop_frq_cat_count_df(self, geno_aggregated_df):
