@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
-from datetime import datetime
 import time
-from misc import Logger
+from cohpy.misc import Logger
 import sys
+from natsort import natsorted
 
 
 class Node(object):
@@ -20,12 +20,17 @@ class Node(object):
     
     
     def get_summary_str(self):
-        summary_str_l = ["ID: " + self.id,
-                         "Parents: " + ",".join([parent_node.id for parent_node in self.parent_l]),
-                         "Spouse: " + self.spouse.id if self.spouse != None else "Spouse: ",
-                         "Children: " + ",".join([child_node.id for child_node in self.children_l]),
-                         "Genotype: " + str(self.genotype),
-                         "Sequenced: " + str(self.sequenced_b)]
+        '''Get a summary string for the node.
+        
+        Returns:
+            summary_str: the object attributes as a string.'''
+        
+        summary_str_l = ["ID: {0}".format(self.id),
+                         "Parents: {0}".format(",".join([parent_node.id for parent_node in self.parent_l])),
+                         "Spouse: {0}".format(self.spouse.id if self.spouse != None else ""),
+                         "Children: {0}".format(",".join([child_node.id for child_node in self.children_l])),
+                         "Genotype: {0}".format(self.genotype),
+                         "Sequenced: {0}".format(self.sequenced_b)]
         summary_str = "; ".join(summary_str_l)
         return summary_str
 
@@ -75,7 +80,7 @@ class FamilyTree(object):
         self.logger = logger
         self.id = id
         self.node_l = node_l
-        self.founder_l = filter(lambda x: not x.parent_l, self.node_l)
+        self.founder_l = list(filter(lambda x: not x.parent_l, self.node_l))
         self.sequenced_n = len([node for node in node_l if node.sequenced_b == True])
 
 
@@ -98,6 +103,7 @@ class FamilyTree(object):
         for founder_node in founder_no_spouse_l:
             self.gene_drop_dfs(founder_node)
         #Get the carrier allele count and reset the genotypes.
+        #self.log_all_genotypes(sequenced_only_b=True)
         carrier_allele_count = sum((node.genotype for node in self.node_l if node.sequenced_b == True))
         for node in self.node_l:
             node.genotype = None
@@ -144,22 +150,21 @@ class FamilyTree(object):
             node.genotype = get_allele_passed_to_offspring(node.parent_l[0].genotype) + get_allele_passed_to_offspring(node.parent_l[1].genotype)
 
 
-    def print_all_genotypes(self, sequenced_only_b=False):
-        '''Print all of the genotypes.
+    def log_all_genotypes(self, sequenced_only_b=False):
+        '''Log all of the node genotypes.
         
         Args:
-            sequenced_only_b (boolean): whether to print the genotypes for only the sequenced individuals, or all individuals, defaults to False.'''
-        
-        if sequenced_only_b == False:
-                print " ".join([node.id + ":" + str(node.genotype) for node in self.node_l])
-        else:
-                print " ".join([node.id + ":" + str(node.genotype) for node in self.node_l if node.sequenced_b == True])
+            sequenced_only_b (boolean): whether to log the genotypes for only the sequenced individuals, or all individuals, defaults to False.'''
+
+        node_to_log_l = self.node_l if sequenced_only_b == False else filter(lambda node: node.sequenced_b == True,self.node_l)
+        self.logger.log(" ".join(["FAMILY {}:".format(self.id)] + ["{0}:{1}".format(node.id,node.genotype) for node in node_to_log_l]))
 
 
     def log_all_info(self):
         '''Log all of the information about each node in the family tree.'''
         
-        summary_str_l = ["FAMILY: {0}".format(self.id)] + [node.get_summary_str() + "; Founder " + str(node in self.founder_l) for node in self.node_l]
+        summary_str_l = ["FAMILY: {0}".format(self.id)]
+        summary_str_l += [node.get_summary_str() + "; Founder: {0}".format(node in self.founder_l) for node in self.node_l]
         self.logger.log("\n".join(summary_str_l))
             
 
@@ -173,6 +178,7 @@ class Cohort(object):
         cohort_df["SEQUENCED"] = cohort_df["SEQUENCED"].apply(lambda x: eval(x))
         self.logger.log("Making family tree objects...")
         self.fam_tree_l = cohort_df.groupby("FAMILY").apply(self.make_fam_tree).tolist()
+        self.fam_tree_l = natsorted(self.fam_tree_l, key=lambda fam_tree: fam_tree.id)
     
     
     def make_fam_tree(self, ped_df):
@@ -180,6 +186,7 @@ class Cohort(object):
         
         Args:
             ped_df (pandas.core.frame.DataFrame): contains the pedigree information for the family.
+        
         Returns:
             family_tree (FamilyTree obj): represents the family.'''
         
@@ -203,7 +210,7 @@ class Cohort(object):
         t0 = time.time()
         total_allele_count = sum((fam_tree.sequenced_n*2 for fam_tree in self.fam_tree_l))
         lt_thresh_n = 0
-        for n in xrange(gene_drop_n):
+        for n in range(gene_drop_n):
             carrier_allele_count = sum(fam_tree.gene_drop(pop_af) for fam_tree in self.fam_tree_l)
             gene_drop_af = carrier_allele_count/float(total_allele_count)
             if cohort_af <= gene_drop_af:
@@ -211,5 +218,5 @@ class Cohort(object):
         cohort_enriched_p = lt_thresh_n/float(gene_drop_n)
         self.logger.log("p-value={0}".format(cohort_enriched_p))
         t1 = time.time()
-        print t1 - t0
+        self.logger.log("Processing time: {0:.2f} secs".format(t1-t0))
         return cohort_enriched_p

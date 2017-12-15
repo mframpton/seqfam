@@ -14,4 +14,4 @@ variant_genotypes_s = pd.Series(data=["1","1","1","1","0","1","1","1","1","1","1
                                 index=["1_1","1_2","1_3","1_4","1_5","2_10","2_11","2_12","2_13","2_14","2_15"])
 pof = Pof(family_l)
 family_pass_l = pof.get_family_pass_name_l(variant_genotypes_s)
-print family_pass_l
+print(family_pass_l)

@@ -1,5 +1,5 @@
 from natsort import natsorted
-from misc import Logger
+from cohpy.misc import Logger
 
 
 class Family(object):

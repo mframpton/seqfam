@@ -4,7 +4,7 @@ import statsmodels.discrete.discrete_model as sm
 from scipy import stats
 stats.chisqprob = lambda chisq, df: stats.chi2.sf(chisq, df)
 import sys
-from misc import Logger
+from cohpy.misc import Logger
 import operator
 from collections import OrderedDict
 
@@ -46,8 +46,8 @@ class CMC(object):
         self.gene_col = gene_col
         self.pop_frq_col_l = pop_frq_col_l
         pop_frq_cat_dict = OrderedDict(sorted(pop_frq_cat_dict.items(),key=operator.itemgetter(1)))
-        self.pop_frq_cat_l = pop_frq_cat_dict.keys()
-        self.pop_frq_bin_arr = np.array(pop_frq_cat_dict.values())
+        self.pop_frq_cat_l = list(pop_frq_cat_dict.keys())
+        self.pop_frq_bin_arr = np.array(list(pop_frq_cat_dict.values()))
         #Read in samples, genotypes and covariates.
         self.logger.log("Reading in samples and annotated genotypes...")
         self.sample_s = pd.read_csv(samples_path, dtype=str, index_col="Sample ID")
@@ -87,7 +87,7 @@ class CMC(object):
         '''
 
         self.logger.log("Assign variants to a population frequency group.")
-        pop_frq_s = geno_df.apply(lambda row_s: filter(lambda x: np.isnan(x) == False, row_s.ix[self.pop_frq_col_l].tolist()+[0.0])[0],axis=1)
+        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: np.isnan(x) == False, row_s.ix[self.pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
         pop_frq_idx_arr = np.digitize(pop_frq_s.values,self.pop_frq_bin_arr)
         geno_df = geno_df.join(pd.Series(data=pop_frq_idx_arr, index=pop_frq_s.index, name="pop_frq_cat_idx"))
         geno_df["pop_frq_cat"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == len(self.pop_frq_cat_l) else self.pop_frq_cat_l[row_s["pop_frq_cat_idx"]], axis=1)

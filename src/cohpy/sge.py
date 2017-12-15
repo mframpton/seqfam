@@ -7,7 +7,7 @@ import glob
 import sys
 from natsort import natsorted
 import subprocess
-from misc import Logger
+from cohpy.misc import Logger
 
 
 class SGE(object):
@@ -38,7 +38,7 @@ class SGE(object):
 		'''Make bash task scripts for each map task and a text file containing references to them.'''
 		self.logger.log("# of map tasks to execute: {0}".format(len(map_task_exec_l)))
 		all_map_task_stream = open(os.path.join(self.scripts_dir,".".join([prep,"all_map_task","txt"])), 'w') 	
-		for i in xrange(len(map_task_l)):
+		for i in range(len(map_task_l)):
 			task_script = os.path.join(self.scripts_dir,".".join([prep,str(i+1),"sh"]))
 			task_stream = open(task_script, 'w')
 			task_stream.write("#!/bin/bash\n\n")

@@ -6,8 +6,8 @@ from cohpy.gene_drop import Cohort
 data_dir = os.path.join("..","..","data","gene_drop")
 cohort_tsv = os.path.join(data_dir,"cohort.tsv")
 cohort = Cohort(cohort_tsv)
-#print help(cohort)
-#print help(cohort.gene_drop)
+#print(help(cohort))
+#print(help(cohort.gene_drop))
 #cohort.fam_tree_l[0].log_all_info()
 #sys.exit()
 

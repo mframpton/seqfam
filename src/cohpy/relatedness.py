@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import itertools
 from collections import OrderedDict
-from misc import Logger
+from cohpy.misc import Logger
 
 
 class Relatedness(object):
@@ -28,8 +28,7 @@ class Relatedness(object):
             bf_b (boolean): whether to look for duplicates from different families (True) or duplicates within the same family, defaults to True.
         
         Returns:
-            duplicate_l (list of strs): pairs of identified duplicates. 
-        '''
+            duplicate_l (list of strs): pairs of identified duplicates.'''
         
         self.logger.log("Checking for {between_or_within} duplicates...".format(between_or_within="between-family" if bf_b == True else "within-family"))
         kinship_coef_file = self.bf_file if bf_b == True else self.wf_file
@@ -39,12 +38,19 @@ class Relatedness(object):
         duplicate_df = kinship_coef_df.ix[kinship_coef_df["Kinship"] >= self.kinship_coef_thresh_dict["0"],:]
         duplicate_l = []
         if ~duplicate_df.empty:
-            duplicate_l = [self.__convert_tuple_to_ids(duplicate_pair_tuple) for duplicate_pair_tuple in duplicate_df.index.tolist()]
+            duplicate_l = [self.convert_tuple_to_ids(duplicate_pair_tuple) for duplicate_pair_tuple in duplicate_df.index.tolist()]
         
         return duplicate_l
         
         
-    def __convert_tuple_to_ids(self, duplicate_pair_tuple):
+    def convert_tuple_to_ids(self, duplicate_pair_tuple):
+        '''
+        Args:
+            duplicate_pair_tuple:
+        
+        Returns:
+        '''
+        
         #print duplicate_pair_tuple
         id1,id2 = "",""
         if len(duplicate_pair_tuple) == 3:
@@ -58,8 +64,7 @@ class Relatedness(object):
         '''Make a DataFrame containing the expected and observed relationships for individuals in the same family.
         
         Returns:
-            exp_obs_df (DataFrame): contains columns for the expected and observed relationships. 
-        '''
+            exp_obs_df (DataFrame): contains columns for the expected and observed relationships.'''
         
         self.logger.log("Checking expected versus observed within-family relationships...")
         if self.wf_df == None:
@@ -69,10 +74,10 @@ class Relatedness(object):
             self.cohort_df = self.cohort_df.ix[self.cohort_df["FAMILY"]!="243",:]
 
         '''Get the expected relationships.'''
-        exp_obs_df = self.cohort_df.groupby(by="FAMILY", sort=False).apply(self.__get_exp_rel_df)
+        exp_obs_df = self.cohort_df.groupby(by="FAMILY", sort=False).apply(self.get_exp_rel_df)
         
         '''Add the observed relationships.'''
-        exp_obs_df["Kinship"] = exp_obs_df.apply(func=self.__get_kinship_coef, axis=1)
+        exp_obs_df["Kinship"] = exp_obs_df.apply(func=self.get_kinship_coef, axis=1)
         exp_obs_df["OBS_REL"] = exp_obs_df["Kinship"].apply(lambda x: np.NaN if pd.isnull(x) else "0" if x >= self.kinship_coef_thresh_dict["0"] else "1" if x >= self.kinship_coef_thresh_dict["1"] else "2" if x >= self.kinship_coef_thresh_dict["2"] else "3" if x >= self.kinship_coef_thresh_dict["3"] else "4")
         exp_obs_df.reset_index(inplace=True)
         exp_obs_df.drop("level_1", inplace=True, axis=1)
@@ -81,7 +86,11 @@ class Relatedness(object):
         return exp_obs_df
 
     
-    def __get_exp_rel_df(self, fam_df):
+    def get_exp_rel_df(self, fam_df):
+        '''
+        Args:
+            fam_df (DataFrame): 
+        '''
     
         '''Tidy fam_df.'''
         #fam = fam_df.iloc[0]["FAMILY"]
@@ -90,9 +99,9 @@ class Relatedness(object):
         
         '''Get each individual's parents and grandparents.'''
         fam_uniq_ind_l = pd.unique(fam_df["PERSON"]).tolist()
-        fam_uniq_ind_l = filter(lambda x: x != "0" and x.startswith("p") == False, fam_uniq_ind_l)
+        fam_uniq_ind_l = list(filter(lambda x: x != "0" and x.startswith("p") == False, fam_uniq_ind_l))
         relations_df = pd.DataFrame(data={"IND":fam_uniq_ind_l})
-        relations_df[["siblings","parents","grandparents"]] = relations_df["IND"].apply(self.__get_relations_df, fam_df=fam_df)
+        relations_df[["siblings","parents","grandparents"]] = relations_df["IND"].apply(self.get_relations_df, fam_df=fam_df)
         relations_df.set_index("IND", inplace=True)
     
         '''Get every pair of individuals and store their expected and observed relationship.'''
@@ -102,12 +111,12 @@ class Relatedness(object):
             ind2_l.append(subset[1])
         #exp_rel_df = pd.DataFrame(OrderedDict([("FID1",[fam]*len(ind1_l)),("ID1",ind1_l),("FID2",[fam]*len(ind2_l)),("ID2",ind2_l)]))
         exp_rel_df = pd.DataFrame(OrderedDict([("ID1",ind1_l),("ID2",ind2_l)]))
-        exp_rel_df["EXP_REL"] = exp_rel_df.apply(axis=1, func=self.__get_exp_rel, relations_df=relations_df)
+        exp_rel_df["EXP_REL"] = exp_rel_df.apply(axis=1, func=self.get_exp_rel, relations_df=relations_df)
     
         return exp_rel_df
 
 
-    def __get_relations_df(self, ind, fam_df):
+    def get_relations_df(self, ind, fam_df):
     
         #print "IND: {0}".format(ind)
         father,mother = fam_df.ix[fam_df["PERSON"]==ind,:].iloc[0]["FATHER"],fam_df.ix[fam_df["PERSON"]==ind,:].iloc[0]["MOTHER"]
@@ -122,14 +131,14 @@ class Relatedness(object):
         #print "PARENTAL GF: {0}".format(maternal_gf)
         maternal_gm = fam_df.ix[fam_df["PERSON"]==mother,:].iloc[0]["MOTHER"] if pd.notnull(mother) else np.NaN
         #print "PARENTAL GM: {0}".format(maternal_gm)
-        parent_l = filter(lambda x: pd.notnull(x), [father,mother])
-        grandparent_l = filter(lambda x: pd.notnull(x), [parental_gf,parental_gm,maternal_gf,maternal_gm])
+        parent_l = list(filter(lambda x: pd.notnull(x), [father,mother]))
+        grandparent_l = list(filter(lambda x: pd.notnull(x), [parental_gf,parental_gm,maternal_gf,maternal_gm]))
         
         return pd.Series([sibling_l,parent_l,grandparent_l],
                          index=["siblings","parents","grandparents"])
 
 
-    def __get_exp_rel(self, ind_pair_s, relations_df):
+    def get_exp_rel(self, ind_pair_s, relations_df):
     
         ind1, ind2 = ind_pair_s["ID1"], ind_pair_s["ID2"]
         ind1_sibling_l, ind2_sibling_l = relations_df.loc[ind1,"siblings"], relations_df.loc[ind2,"siblings"]
@@ -153,7 +162,7 @@ class Relatedness(object):
         return exp_rel
     
     
-    def __get_kinship_coef(self, s):
+    def get_kinship_coef(self, s):
 
         #print s
         kinship_coef = np.NaN

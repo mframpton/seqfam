@@ -7,8 +7,7 @@ class Logger(object):
         '''Prints a time-stamped text string.
         
         Args:
-            txt (str): text string to print.
-        '''
+            txt (str): text string to print.'''
         
         timestamped_log_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ": " + txt
-        print timestamped_log_str
+        print(timestamped_log_str)
