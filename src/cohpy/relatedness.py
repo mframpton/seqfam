@@ -74,13 +74,18 @@ class Relatedness(object):
             self.wf_df = pd.read_csv(self.wf_file, sep="\t", dtype=str)
         if self.cohort_df == None:
             self.cohort_df = pd.read_csv(self.cohort_tsv, sep="\t", dtype=str)
-            self.cohort_df = self.cohort_df.ix[self.cohort_df["FAMILY"]!="243",:]
 
+        self.logger.log("Cohort contains {0} individuals and {1} families.".format(pd.unique(self.cohort_df["PERSON"]).size,
+                                                                                   pd.unique(self.cohort_df["FAMILY"]).size))
         self.logger.log("Get the expected relationships between members of each family.")
         exp_obs_df = self.cohort_df.groupby(by="FAMILY", sort=False).apply(self.get_exp_rel_df)
+        self.logger.log("Obtained expected relationship for {0} pairs across {1} families.".format(len(exp_obs_df.index),
+                                                                                                   len(exp_obs_df.index.get_level_values(0).unique())))
         
         self.logger.log("Get and merge the observed relationships between members of each family.")
         exp_obs_df["Kinship"] = exp_obs_df.apply(func=self.get_kinship_coef, axis=1)
+        self.logger.log("Retrieved kinship coefficients for {0} pairs across {1} families.".format(exp_obs_df["Kinship"].notnull().sum(),
+                                                                                                   len(exp_obs_df.ix[exp_obs_df["Kinship"].notnull(),:].index.get_level_values(0).unique())))
         exp_obs_df["OBS_REL"] = exp_obs_df["Kinship"].apply(lambda x: np.NaN if pd.isnull(x) else "0" if x >= self.kinship_coef_thresh_dict["0"] else "1" if x >= self.kinship_coef_thresh_dict["1"] else "2" if x >= self.kinship_coef_thresh_dict["2"] else "3" if x >= self.kinship_coef_thresh_dict["3"] else "4")
         exp_obs_df.reset_index(inplace=True)
         exp_obs_df.drop("level_1", inplace=True, axis=1)
@@ -104,8 +109,10 @@ class Relatedness(object):
         
         #Get each individual's parents and grandparents.
         fam_uniq_ind_l = pd.unique(fam_df["PERSON"]).tolist()
-        fam_uniq_ind_l = list(filter(lambda x: x != "0" and x.startswith("p") == False, fam_uniq_ind_l))
+        fam_uniq_ind_l = list(filter(lambda x: x != "0" and x.startswith("p") == False, fam_uniq_ind_l)) #ASSUME p means unsequenced: check this is convention.
         relations_df = pd.DataFrame(data={"IND":fam_uniq_ind_l})
+        if relations_df.empty:
+            return pd.DataFrame(columns=["ID1","ID2","EXP_REL"])
         relations_df[["siblings","parents","grandparents"]] = relations_df["IND"].apply(self.get_relations_df, fam_df=fam_df)
         relations_df.set_index("IND", inplace=True)
     
