@@ -7,7 +7,7 @@ bf_file = os.path.abspath(os.path.join("..","..","data","relatedness",".".join([
 print(bf_file)
 wf_file = os.path.abspath(os.path.join("..","..","data","relatedness",".".join(["all","rel","kinship","ibs"])))
 print(wf_file)
-cohort_tsv = os.path.abspath(os.path.join("..","..","data","gene_drop",".".join(["cohort","tsv"])))
+cohort_tsv = os.path.abspath(os.path.join("..","..","data",".".join(["cohort","tsv"])))
 relatedness = Relatedness(bf_file,wf_file,cohort_tsv)
 
 '''Within-family duplicates'''
