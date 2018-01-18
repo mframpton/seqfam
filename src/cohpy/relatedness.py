@@ -75,10 +75,16 @@ class Relatedness(object):
         if self.cohort_df == None:
             self.cohort_df = pd.read_csv(self.cohort_tsv, sep="\t", dtype=str)
 
-        self.logger.log("Cohort contains {0} individuals and {1} families.".format(pd.unique(self.cohort_df["PERSON"]).size,
+        self.logger.log("Cohort contains {0} individuals and {1} families.".format(len(self.cohort_df.drop_duplicates(subset=["PERSON","FAMILY"]).index),
+                                                                                   pd.unique(self.cohort_df["FAMILY"]).size))
+        fam_ind_seq_dict = self.wf_df.groupby("FID").apply(lambda fam_df: pd.unique(fam_df["ID1"].append(fam_df["ID2"])).tolist()).to_dict()
+        self.logger.log("# individuals with >=1 kinship coefficient: {0}".format(sum([len(fam_ind_seq_dict[fam]) for fam in fam_ind_seq_dict])))
+        self.logger.log("Removing families with no kinship coefficients.") 
+        self.cohort_df = self.cohort_df.ix[self.cohort_df["FAMILY"].isin(fam_ind_seq_dict),:]
+        self.logger.log("Cohort contains {0} individuals and {1} families.".format(len(self.cohort_df.drop_duplicates(subset=["PERSON","FAMILY"]).index),
                                                                                    pd.unique(self.cohort_df["FAMILY"]).size))
         self.logger.log("Get the expected relationships between members of each family.")
-        exp_obs_df = self.cohort_df.groupby(by="FAMILY", sort=False).apply(self.get_exp_rel_df)
+        exp_obs_df = self.cohort_df.groupby(by="FAMILY", sort=False).apply(self.get_exp_rel_df, fam_ind_seq_dict)
         self.logger.log("Obtained expected relationship for {0} pairs across {1} families.".format(len(exp_obs_df.index),
                                                                                                    len(exp_obs_df.index.get_level_values(0).unique())))
         
@@ -93,7 +99,7 @@ class Relatedness(object):
         return exp_obs_df
 
 
-    def get_exp_rel_df(self, fam_df):
+    def get_exp_rel_df(self, fam_df, fam_ind_seq_dict):
         '''Make a dataframe containing the expected relationships between individuals in a family.
         
         Args:
@@ -102,17 +108,13 @@ class Relatedness(object):
         Returns:
             exp_rel_df (DataFrame): contains the expected relationships between the family members.'''
     
-        #Tidy fam_df
-        #fam = fam_df.iloc[0]["FAMILY"]
-        fam_df.replace({"0":np.NaN}, inplace=True)
-        #print fam_df
+        #print(fam_df.name)        
+        fam_df.replace({"0":np.NaN}, inplace=True) #Tidy fam_df
         
         #Get each individual's parents and grandparents.
         fam_uniq_ind_l = pd.unique(fam_df["PERSON"]).tolist()
-        fam_uniq_ind_l = list(filter(lambda x: x != "0" and x.startswith("p") == False, fam_uniq_ind_l)) #ASSUME p means unsequenced: check this is convention.
+        fam_uniq_ind_l = list(filter(lambda x: x in fam_ind_seq_dict[fam_df.name], fam_uniq_ind_l)) #Only need relations for samples with kinship coefs.
         relations_df = pd.DataFrame(data={"IND":fam_uniq_ind_l})
-        if relations_df.empty:
-            return pd.DataFrame(columns=["ID1","ID2","EXP_REL"])
         relations_df[["siblings","parents","grandparents"]] = relations_df["IND"].apply(self.get_relations_df, fam_df=fam_df)
         relations_df.set_index("IND", inplace=True)
     
@@ -121,7 +123,6 @@ class Relatedness(object):
         for subset in itertools.combinations(fam_uniq_ind_l,2):
             ind1_l.append(subset[0])
             ind2_l.append(subset[1])
-        #exp_rel_df = pd.DataFrame(OrderedDict([("FID1",[fam]*len(ind1_l)),("ID1",ind1_l),("FID2",[fam]*len(ind2_l)),("ID2",ind2_l)]))
         exp_rel_df = pd.DataFrame(OrderedDict([("ID1",ind1_l),("ID2",ind2_l)]))
         exp_rel_df["EXP_REL"] = exp_rel_df.apply(axis=1, func=self.get_exp_rel, relations_df=relations_df)
         return exp_rel_df
