@@ -1,6 +1,7 @@
 import os
 from cohpy.sge import SGE
 import sys
+import pathlib
 
 
 def get_map_task_l(chr_l, data_dir):
@@ -16,6 +17,8 @@ def get_map_task_l(chr_l, data_dir):
 
 
 '''Set the script and data directory.'''
+script_dir = os.path.abspath(os.path.join("..","..","data","sge"))
+pathlib.Path(script_dir).mkdir(parents=True, exist_ok=True) 
 script_dir = os.path.abspath(os.path.join("..","..","data","sge"))
 data_dir = os.path.abspath(os.path.join("..","..","data","sge"))
 
