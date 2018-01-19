@@ -1,10 +1,11 @@
 import os
 from cohpy.gene_burden import CMC
+import sys
 
 
 '''Read in the genotype file.'''
 data_dir = os.path.abspath(os.path.join("..","..","data","gene_burden"))
-genotypes_path = os.path.join(data_dir,".".join(["16","3","5","formatted","csv"]))
+genotypes_path = os.path.join(data_dir,".".join(["variant_genotypes.csv"]))
 samples_path = os.path.join(data_dir,".".join(["samples","csv"]))
 covariates_path = os.path.join(data_dir,".".join(["covariates","csv"]))
 results_path = os.path.join(data_dir,".".join(["cmc","results","csv"]))
