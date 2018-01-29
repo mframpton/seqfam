@@ -15,99 +15,107 @@ class CMC(object):
     
         self.logger = Logger()
         self.sample_s = None
-        self.variant_col = None
-        self.gene_col = None
-        self.pop_frq_col_l = None
-        self.pop_frq_cat_l = None
-        self.pop_frq_bin_arr = None
+        self.geno_df = None
+        self.group_col = None
+        self.agg_col = None
+        self.agg_val_l = None
     
     
-    def do_multivariate_tests(self, samples_path, genotypes_path, variant_col="VARIANT_ID", gene_col="gene_transcript",
-                              pop_frq_col_l=["BroadAJcontrols_ALT","gnomad_AF_NFE","EXAC_NFE"], pop_frq_cat_dict={"rare":0.01,"mod_rare":0.05},
-                              covariates_path=None, results_path=None):
+    def do_multivariate_tests(self, sample_s, geno_df, group_col, agg_col, agg_val_l, covar_df=None, results_path=None):
         '''Main method for doing multivariate tests.
         
         Args:
-            samples_path (str): path to samples file.
-            genotypes_path (str): path to genotypes file.
-            variant_col (str): unique variant ID column in samples file.
-            gene_col (str): gene ID column.
-            pop_frq_col_l (list of strs): ordered list of population frequency columns.
-            pop_frq_grp_dict (dict): mapping from variant population frequency categories to their upper bounds.
-            covariates_path (str): path to covariates file.
-            results_path (str): path to results file. 
+            sample_s (Series): contains samples and affection status.
+            geno_df (DataFrame): contains variants annotations (the group and aggregate columns) and genotypes.
+            group_col (str): column by which to group variants (1 test per group e.g. gene/functional unit).
+            agg_col (str): column by which to aggregate variants e.g. allele population frequency.
+            agg_val_l (list of strs): names of the aggregated categories.
+            covar_df (DataFrame): contains covariates.
+            results_path (str): path to results file.
         
         Returns:
             result_df (DataFrame): multivariate test results.
         '''
         
         #Set object attributes.
-        self.variant_col = variant_col
-        self.gene_col = gene_col
-        self.pop_frq_col_l = pop_frq_col_l
-        pop_frq_cat_dict = OrderedDict(sorted(pop_frq_cat_dict.items(),key=operator.itemgetter(1)))
-        self.pop_frq_cat_l = list(pop_frq_cat_dict.keys())
-        self.pop_frq_bin_arr = np.array(list(pop_frq_cat_dict.values()))
+        self.group_col = group_col
+        self.agg_col = agg_col
+        self.agg_val_l = agg_val_l
         #Read in samples, genotypes and covariates.
         self.logger.log("Reading in samples and annotated genotypes...")
-        self.sample_s = pd.read_csv(samples_path, dtype=str, index_col="Sample ID")
+        self.sample_s = sample_s
         self.sample_s["Affection"] = self.sample_s["Affection"].astype(int)
         self.sample_s = self.sample_s[self.sample_s != 0]
-        geno_df = pd.read_csv(genotypes_path, dtype=str, usecols=[self.variant_col,self.gene_col] + self.pop_frq_col_l + self.sample_s.index.tolist(), index_col=self.variant_col)
-        geno_df[self.pop_frq_col_l] = geno_df[self.pop_frq_col_l].apply(pd.to_numeric, axis=1)
+        self.geno_df = geno_df
         geno_df[self.sample_s.index] = geno_df[self.sample_s.index].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
         geno_df[self.sample_s.index].fillna(0, inplace=True)
-        covar_df = None if covariates_path == None else pd.read_csv(covariates_path, index_col=0)
+        self.covar_df = covar_df
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
-        self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.gene_col]))))
+        self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
-        geno_aggregated_df = self.aggregate_in_var_pop_frq_cats(geno_df)
+        geno_agg_df = self.aggregate_by_agg_col(geno_df)
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
-        result_df = geno_aggregated_df[self.sample_s.index].groupby(level=[self.gene_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
+        result_df = geno_agg_df[self.sample_s.index].groupby(level=[self.group_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
         #Merge the results with the collapsed variant counts.
         self.logger.log("Merge the results with the population frequency variant category counts...")
-        pop_frq_cat_count_df = self.get_pop_frq_cat_count_df(geno_aggregated_df)
-        result_df = pop_frq_cat_count_df.join(result_df)
+        agg_cat_count_df = self.get_agg_cat_count_df(geno_agg_df)
+        result_df = agg_cat_count_df.join(result_df)
         result_df.sort_values(by="llr_cov_p", inplace=True)
         self.logger.log("Write results.")
         result_df.to_csv(results_path, index=True)
         return result_df
     
     
-    def aggregate_in_var_pop_frq_cats(self, geno_df):
+    def aggregate_by_agg_col(self, geno_df):
         '''Aggregate genotypes within variant population frequency categories.
         
         Args:
             geno_df (DataFrame): contains the sample genotypes, variant identifier, gene identifier and population frequencies.
             
         Returns:
-            geno_aggregated_df (DataFrame): contains the genotypes aggregated within variant population frequency categories.
+            geno_agg_df (DataFrame): contains the genotypes aggregated within variant population frequency categories.
         '''
 
-        self.logger.log("Assign variants to a population frequency group.")
-        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: np.isnan(x) == False, row_s.ix[self.pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
-        pop_frq_idx_arr = np.digitize(pop_frq_s.values,self.pop_frq_bin_arr)
+        self.logger.log("For each gene, count the # of variants in each aggregation category.")
+        agg_cat_n_s = geno_df.groupby(self.group_col)[self.agg_col].value_counts()
+        agg_cat_n_s.name = "n"
+        self.logger.log("In each group, aggregate sample genotypes by self.agg_col.")
+        geno_agg_df = geno_df.groupby([self.group_col,self.agg_col])[self.sample_s.index].apply(lambda geno_col: geno_col.any() > 0).astype(int)
+        geno_agg_df = geno_agg_df.join(agg_cat_n_s)
+        return geno_agg_df
+    
+    
+    def assign_variants_to_pop_frq_cats(self, geno_df, pop_frq_col_l, pop_frq_cat_dict):
+        '''Assign variants to allele population frequency categories.
+        
+        Args:
+            geno_df (DataFrame): contains variant identified and population frequencies.
+            pop_frq_col_l (list of str): contains the names of the population allele frequency columns in descending order of preference.
+            pop_frq_cat_dict (dict of (str,float)): mapping of frequency category name to exclusive upper bound. 
+        
+        Returns:
+            geno_df (DataFrame): the same DataFrame which is given as input with an extra column called "pop_frq_cat".
+        '''
+        
+        self.logger.log("Assign variants to a population frequency category.")
+        pop_frq_cat_dict = OrderedDict(sorted(pop_frq_cat_dict.items(),key=operator.itemgetter(1)))
+        pop_frq_cat_l = list(pop_frq_cat_dict.keys())
+        pop_frq_bin_arr = np.array(list(pop_frq_cat_dict.values()))
+        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: np.isnan(x) == False, row_s.ix[pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
+        pop_frq_idx_arr = np.digitize(pop_frq_s.values,pop_frq_bin_arr)
         geno_df = geno_df.join(pd.Series(data=pop_frq_idx_arr, index=pop_frq_s.index, name="pop_frq_cat_idx"))
-        geno_df["pop_frq_cat"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == len(self.pop_frq_cat_l) else self.pop_frq_cat_l[row_s["pop_frq_cat_idx"]], axis=1)
+        geno_df["pop_frq_cat"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == pop_frq_bin_arr.size else pop_frq_cat_l[row_s["pop_frq_cat_idx"]], axis=1)
         geno_df.drop("pop_frq_cat_idx", inplace=True, axis=1)
-        self.logger.log("For each gene, count the # of variants in each population frequency category.")
-        pop_frq_cat_n_s = geno_df.groupby(self.gene_col)["pop_frq_cat"].value_counts()
-        pop_frq_cat_n_s.name = "n"
-        self.logger.log("In each gene, aggregate sample genotypes by variant population frequency group.")
-        geno_aggregated_df = geno_df.groupby([self.gene_col] + ["pop_frq_cat"])[self.sample_s.index].apply(lambda geno_col: geno_col.any() > 0).astype(int)
-        #print geno_aggregated_df[self.sample_s.index.tolist()[:2]].to_string()
-        #sys.exit()
-        geno_aggregated_df = geno_aggregated_df.join(pop_frq_cat_n_s)
-        return geno_aggregated_df
+        return geno_df
+        
     
-    
-    def do_multivariate_test(self, geno_aggregated_gene_df, y, covar_df=None):
+    def do_multivariate_test(self, geno_agg_gene_df, y, covar_df=None):
         '''Do a multivariate test for 1 gene.
         
         Args:
-            geno_aggregated_gene_df (DataFrame): contains the genotypes for 1 gene aggregated in variant population frequency categories.
+            geno_agg_gene_df (DataFrame): contains the genotypes for 1 gene aggregated in by the aggregation column e.g. by population allele frequency.
             y (numpy.ndarray): affection status where 1=affected and 0=unaffected. 
             covar_df (DataFrame): contains the covariates. 
             
@@ -115,18 +123,18 @@ class CMC(object):
             test_result_s (Series): contains the multivariate test results.
         '''
         
-        geno_aggregated_gene_df.index = geno_aggregated_gene_df.index.droplevel() #Drop the gene name so it won't be in the pop frq cat variable names.
-        logit_result = self.fit_logit_model(geno_aggregated_gene_df,y)
+        geno_agg_gene_df.index = geno_agg_gene_df.index.droplevel() #Drop the group name so it won't be in the agg cat variable names.
+        logit_result = self.fit_logit_model(geno_agg_gene_df,y)
         test_result_l = [("llr_p",logit_result.llr_pvalue)]
         if covar_df is not None:
             '''Model with only covariates'''
             logit_result_h0 = self.fit_logit_model(covar_df,y)
             '''Model with covariates plus aggregated variant independent variables.'''
-            logit_result_h1 = self.fit_logit_model(pd.concat([covar_df, geno_aggregated_gene_df]),y)
+            logit_result_h1 = self.fit_logit_model(pd.concat([covar_df, geno_agg_gene_df]),y)
             llr_cov_p = stats.chisqprob(2*(logit_result_h1.llf - logit_result_h0.llf), logit_result_h1.df_model - logit_result_h0.df_model)
             test_result_l.append(("llr_cov_p",llr_cov_p))
-            h1_coef_l = [(pop_frq_cat+"_c",logit_result_h1.params.loc[pop_frq_cat]) if pop_frq_cat in logit_result_h1.params.index else (pop_frq_cat+"_c",np.NaN) for pop_frq_cat in self.pop_frq_cat_l]
-            h1_pval_l = [(pop_frq_cat+"_p",logit_result_h1.pvalues.loc[pop_frq_cat]) if pop_frq_cat in logit_result_h1.pvalues.index else (pop_frq_cat+"_p",np.NaN) for pop_frq_cat in self.pop_frq_cat_l]
+            h1_coef_l = [(agg_cat+"_c",logit_result_h1.params.loc[agg_cat]) if agg_cat in logit_result_h1.params.index else (agg_cat+"_c",np.NaN) for agg_cat in self.agg_val_l]
+            h1_pval_l = [(agg_cat+"_p",logit_result_h1.pvalues.loc[agg_cat]) if agg_cat in logit_result_h1.pvalues.index else (agg_cat+"_p",np.NaN) for agg_cat in self.agg_val_l]
             h1_coef_pval_l = [item for sublist in zip(h1_coef_l,h1_pval_l) for item in sublist]
             test_result_l.extend(h1_coef_pval_l)
         test_result_s = pd.Series(OrderedDict(test_result_l))
@@ -148,21 +156,21 @@ class CMC(object):
         return logit_result
     
     
-    def get_pop_frq_cat_count_df(self, geno_aggregated_df):
+    def get_agg_cat_count_df(self, geno_agg_df):
         '''For each gene, get the number of variants in each population frequency category.
         
         Args:
-            geno_aggregated_df (DataFrame): contains the genotypes aggregated in variant population frequency categories in each gene.
+            geno_agg_df (DataFrame): contains the genotypes aggregated by the aggregation column in each gene.
             
         Returns:
-            pop_frq_cat_count_df (DataFrame): contains the number of variants in each population frequency category in each gene.
+            agg_cat_count_df (DataFrame): contains the number of variants in each aggregtion category in each group.
         '''
         
-        pop_frq_cat_count_df = geno_aggregated_df['n'].reset_index()
-        pop_frq_cat_count_df["pop_frq_cat"] = pop_frq_cat_count_df["pop_frq_cat"].apply(lambda x: x if x in self.pop_frq_cat_l else "unagg")
-        pop_frq_cat_count_df = pd.pivot_table(data=pop_frq_cat_count_df, values='n', index=self.gene_col, columns='pop_frq_cat')
-        pop_frq_cat_count_df = pop_frq_cat_count_df.reindex(columns=self.pop_frq_cat_l+["unagg"])
-        pop_frq_cat_count_df.fillna(0, inplace=True)
-        pop_frq_cat_count_df = pop_frq_cat_count_df.apply(pd.to_numeric, downcast='integer', axis=1)
-        return pop_frq_cat_count_df
+        agg_cat_count_df = geno_agg_df['n'].reset_index()
+        agg_cat_count_df[self.agg_col] = agg_cat_count_df[self.agg_col].apply(lambda x: x if x in self.agg_val_l else "unagg")
+        agg_cat_count_df = pd.pivot_table(data=agg_cat_count_df, values='n', index=self.group_col, columns=self.agg_col)
+        agg_cat_count_df = agg_cat_count_df.reindex(columns=self.agg_val_l+["unagg"])
+        agg_cat_count_df.fillna(0, inplace=True)
+        agg_cat_count_df = agg_cat_count_df.apply(pd.to_numeric, downcast='integer', axis=1)
+        return agg_cat_count_df
         
