@@ -10,7 +10,8 @@ def get_map_task_l(chr_l, data_dir):
     for i in range(len(chr_l)):
         map_task = " ".join(["python","1_map_task.py","--chr",chr_l[i]])
         map_task_l.append(map_task)
-        if os.path.isfile(os.path.join(data_dir,".".join(["map_task",chr_l[i],"out"]))) == False:
+        #The user can replace the following if condition with one confirming output for this map task does not already exist, and hence it should also be in map_task_exec_l. 
+        if i % 2 == 0:
             map_task_exec_l.append(map_task)
 
     return [map_task_l,map_task_exec_l]
