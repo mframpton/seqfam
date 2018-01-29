@@ -5,7 +5,7 @@ import pandas as pd
 '''Create the relatedness object.'''
 wf_file = os.path.abspath(os.path.join("..","..","data","relatedness",".".join(["king","kinship","ibs"])))
 cohort_tsv = os.path.abspath(os.path.join("..","..","data",".".join(["cohort","tsv"])))
-relatedness = Relatedness(bf_file=None,wf_file,cohort_tsv)
+relatedness = Relatedness(wf_file=wf_file,cohort_tsv=cohort_tsv,bf_file=None)
 
 '''Within-family duplicates'''
 wf_duplicate_l = relatedness.find_duplicates(bf_b=False)
