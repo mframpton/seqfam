@@ -1,11 +1,5 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime
 import os
-import re
 import glob
-import sys
-from natsort import natsorted
 import subprocess
 from cohpy.misc import Logger
 
@@ -36,7 +30,7 @@ class SGE(object):
 		reduce_stream.close()
 		
 		'''Make bash task scripts for each map task and a text file containing references to them.'''
-		self.logger.log("# of map tasks to execute: {0}".format(len(map_task_exec_l)))
+		self.logger.log("# of map tasks to execute: {0}/{1}".format(len(map_task_exec_l),len(map_task_l)))
 		map_task_exec_stream = open(os.path.join(self.scripts_dir,".".join([prep,"map_task_exec","txt"])), 'w') 	
 		for i in range(len(map_task_l)):
 			task_script = os.path.join(self.scripts_dir,".".join([prep,str(i+1),"sh"]))
