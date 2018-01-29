@@ -37,7 +37,7 @@ class SGE(object):
 		
 		'''Make bash task scripts for each map task and a text file containing references to them.'''
 		self.logger.log("# of map tasks to execute: {0}".format(len(map_task_exec_l)))
-		all_map_task_stream = open(os.path.join(self.scripts_dir,".".join([prep,"all_map_task","txt"])), 'w') 	
+		map_task_exec_stream = open(os.path.join(self.scripts_dir,".".join([prep,"map_task_exec","txt"])), 'w') 	
 		for i in range(len(map_task_l)):
 			task_script = os.path.join(self.scripts_dir,".".join([prep,str(i+1),"sh"]))
 			task_stream = open(task_script, 'w')
@@ -46,10 +46,10 @@ class SGE(object):
 			task_stream.close()
 			if not map_task_exec_l == False:
 				if map_task_l[i] in map_task_exec_l:
-					all_map_task_stream.write("bash " + task_script + "\n")
+					map_task_exec_stream.write("bash " + task_script + "\n")
 			else:
-				all_map_task_stream.write("bash " + task_script + "\n") 
-		all_map_task_stream.close()	
+				map_task_exec_stream.write("bash " + task_script + "\n") 
+		map_task_exec_stream.close()	
 	
 		'''Make the submit script.'''
 		submit_stream = open(os.path.join(self.scripts_dir,"submit_map_reduce.sh"),'w')
@@ -72,7 +72,7 @@ class SGE(object):
 		sge_job_txt_l = ["#!/bin/bash","#$ -S /bin/bash","#$ -o /dev/null","#$ -e /dev/null","#$ -cwd","#$ -V","#$ -l tmem="+mem+",h_vmem="+mem,"#$ -l h_rt=24:0:0","set -u","set -x","\n"]
 		if map_cmd_n != None:
 			sge_job_txt_l.insert(-3,"#$ -t 1:"+str(map_cmd_n))
-			sge_job_txt_l.extend(["scriptname=" + prep + ".$SGE_TASK_ID"] + oe_txt_l + ['CMDS=`sed -n -e "$SGE_TASK_ID p" ' + prep + '.all_map_task.txt`',"$CMDS"])
+			sge_job_txt_l.extend(["scriptname=" + prep + ".$SGE_TASK_ID"] + oe_txt_l + ['CMDS=`sed -n -e "$SGE_TASK_ID p" ' + prep + '.map_task_exec.txt`',"$CMDS"])
 		elif reduce_task != None:
 			sge_job_txt_l.extend(["scriptname=" + prep + ".reduce"] + oe_txt_l + [reduce_task])
 	
