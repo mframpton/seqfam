@@ -11,7 +11,7 @@ class Relatedness(object):
     '''Provides methods to find duplicates either between or within families, and to identify pairs of individuals within a family whose observed
     relationship (KING kinship coefficient) is different than expected given the pedigree.'''
     
-    def __init__(self,bf_file,wf_file,cohort_tsv,kinship_coef_thresh_dict={"0":0.354,"1":0.177,"2":0.0844,"3":0.0442}):
+    def __init__(self,bf_file=None,wf_file=None,cohort_tsv=None,kinship_coef_thresh_dict={"0":0.354,"1":0.177,"2":0.0844,"3":0.0442}):
         
         self.logger = Logger()
         self.bf_file = bf_file
