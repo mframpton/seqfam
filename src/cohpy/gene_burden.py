@@ -62,7 +62,10 @@ class CMC(object):
         self.logger.log("Merge the results with the population frequency variant category counts...")
         agg_cat_count_df = self.get_agg_cat_count_df(geno_agg_df)
         result_df = agg_cat_count_df.join(result_df)
-        result_df.sort_values(by="llr_cov_p", inplace=True)
+        if covar_df is None:
+            result_df.sort_values(by="llr_p", inplace=True)
+        else:
+            result_df.sort_values(by="llr_cov_p", inplace=True)
         self.logger.log("Write results.")
         result_df.to_csv(results_path, index=True)
         return result_df
