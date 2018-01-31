@@ -3,7 +3,7 @@
 Requirements
 ============
 
-CohPy is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6 and requires various data analysis libraries/packages such as Pandas. The user can acquire almost all of these by downloading and installing the Anaconda python distribution. The StatsModels module, which is not in the Anaconda distribution, is also required.
+CohPy is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6 and requires various data analysis libraries/packages such as *Pandas*. The user can acquire almost all of these by downloading and installing the *Anaconda* python distribution. The *StatsModels* module, which is not in the *Anaconda* distribution, is also required.
 
 Modules
 =======
@@ -22,4 +22,4 @@ The repository contains additional scripts in src/examples which demonstrate the
 
 If the package is used to generate data for a publication, you must cite the following article:
 
-Matthew Frampton, Elena Schiff, Nikolas Pontikos, Adam P. Levine, Anthony Segal (2018) CohPy: a python package for analysis of next generation sequencing DNA data in families. (Under review)
+Matthew Frampton, Elena Schiff, Nikolas Pontikos, Adam P. Levine, Anthony Segal (2018) CohPy: a python package for analysis of next generation sequencing DNA data in families. *(Under review)*
