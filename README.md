@@ -3,12 +3,12 @@
 Requirements
 ============
 
-CohPy is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6 and requires various data analysis libraries/packages such as *Pandas*. The user can acquire almost all of these by downloading and installing the *Anaconda* python distribution. The *StatsModels* module, which is not in the *Anaconda* distribution, is also required. Having cloned the repository, the user should add the *src* directory to their python path.
+*CohPy* is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6 and requires various data analysis libraries/packages such as *Pandas*. The user can acquire almost all of these by downloading and installing the *Anaconda* python distribution. The *StatsModels* module, which is not in the *Anaconda* distribution, is also required. Having cloned the repository, the user should add the *src* directory to their python path.
 
 Modules
 =======
 
-CohPy has 5 modules:
+*CohPy* has 5 modules:
 1.	*gene_drop.py*: Monte Carlo gene dropping;
 2.	*pof.py*: variant pattern of occurrence in families;
 3.	*gene_burden.py*: regression-based gene burden testing;
