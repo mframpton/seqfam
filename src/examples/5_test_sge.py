@@ -4,13 +4,13 @@ import sys
 import pathlib
 
 
-def get_map_task_l(chr_l, data_dir):
+def get_map_task_l(chr_l):
 
     map_task_l, map_task_exec_l = [],[]
     for i in range(len(chr_l)):
         map_task = " ".join(["python","1_map_task.py","--chr",chr_l[i]])
         map_task_l.append(map_task)
-        #The user can replace the following if condition with one confirming output for this map task does not already exist, and hence it should also be in map_task_exec_l. 
+        #The user can replace the if condition with one confirming output for the map task is absent, and hence it should be in map_task_exec_l. 
         if i % 2 == 0:
             map_task_exec_l.append(map_task)
 
@@ -23,9 +23,9 @@ pathlib.Path(script_dir).mkdir(parents=True, exist_ok=True)
 script_dir = os.path.abspath(os.path.join("..","..","data","sge"))
 data_dir = os.path.abspath(os.path.join("..","..","data","sge"))
 
-chr_l = [str(chr) for chr in range(1,23)] + ["X","Y"]
+chr_l = [str(chrom) for chrom in range(1,23)] + ["X","Y"]
 print("Making map tasks...")
-[map_task_l, map_task_exec_l] = get_map_task_l(chr_l,data_dir)
+[map_task_l, map_task_exec_l] = get_map_task_l(chr_l)
 print("Making reduce tasks...")
 reduce_task_l = [" ".join(["python","2_summarise_results.py"])]
 reduce_task_l.append(" ".join(["python","3_summarise_results.py"]))
