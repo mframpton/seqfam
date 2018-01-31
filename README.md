@@ -8,7 +8,7 @@ CohPy is compatible with Windows, Mac OS X and Linux operating systems. It is co
 Modules
 =======
 
-CohPy has 5 modules which are:
+CohPy has 5 modules:
 1.	*gene_drop.py*: Monte Carlo gene dropping;
 2.	*pof.py*: variant pattern of occurrence in families;
 3.	*gene_burden.py*: regression-based gene burden testing;
@@ -18,7 +18,7 @@ CohPy has 5 modules which are:
 Tests
 =====
 
-The repository contains additional scripts in *src/examples* which demonstrate the functionality of the modules on example data, including files in the *data* directory. They are *1_test_gene_drop.py*, *2_test_pof.py*, *3_test_gene_burden.py*, *4_test_relatedness.py*, and *5_test_sge.py*. The user should first change directory into *src/examples* before running the scripts because some use relative paths to the *data* directory.
+The repository contains additional scripts in *src/examples* which demonstrate the functionality of the modules on example data, including files in the *data* directory. They are *1_test_gene_drop.py*, *2_test_pof.py*, *3_test_gene_burden.py*, *4_test_relatedness.py*, and *5_test_sge.py*. The user should first change directory into *src/examples* before running the scripts because some use relative paths to files in the *data* directory.
 
 If the package is used to generate data for a publication, you must cite the following article:
 
