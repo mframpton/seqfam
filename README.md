@@ -3,7 +3,7 @@
 Requirements
 ============
 
-*CohPy* is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6, but can also be run by Python 2.7. It requires various data analysis libraries/packages such as *Pandas*. The user can acquire almost all of these by downloading and installing the *Anaconda* python distribution. The *StatsModels* module, which is not in the *Anaconda* distribution, is also required. Having cloned the repository, the user should add the *src* directory to their python path.
+*CohPy* is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6, but can also be run by Python 2.7. It requires various data analysis libraries/packages such as *Pandas*. The user can acquire almost all of these by downloading and installing the *Anaconda* python distribution. The *StatsModels* module, which is not in the *Anaconda* distribution, is also required. Having cloned the repository, the user should add the repository *src* directory to their python path.
 
 Modules
 =======
