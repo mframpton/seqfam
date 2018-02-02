@@ -1,7 +1,7 @@
 import os
 from cohpy.sge import SGE
 import sys
-import pathlib
+#import pathlib
 
 
 def get_map_task_l(chr_l):
@@ -19,15 +19,16 @@ def get_map_task_l(chr_l):
 
 '''Set the script and data directory.'''
 script_dir = os.path.abspath(os.path.join("..","..","data","sge"))
-pathlib.Path(script_dir).mkdir(parents=True, exist_ok=True) 
-script_dir = os.path.abspath(os.path.join("..","..","data","sge"))
+#pathlib.Path(script_dir).mkdir(parents=True, exist_ok=True) 
+if not os.path.exists(script_dir):
+    os.makedirs(script_dir)
 data_dir = os.path.abspath(os.path.join("..","..","data","sge"))
 
 chr_l = [str(chrom) for chrom in range(1,23)] + ["X","Y"]
 print("Making map tasks...")
 [map_task_l, map_task_exec_l] = get_map_task_l(chr_l)
 print("Making reduce tasks...")
-reduce_task_l = [" ".join(["python","2_summarise_results.py"])]
+reduce_task_l = [" ".join(["python","2_merge_results.py"])]
 reduce_task_l.append(" ".join(["python","3_summarise_results.py"]))
 reduce_task = "\n".join(reduce_task_l)
 #print(map_task_l)
