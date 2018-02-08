@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import itertools
 from collections import OrderedDict
-from cohpy.misc import Logger
+from seqfam.misc import Logger
 
 
 class Relatedness(object):

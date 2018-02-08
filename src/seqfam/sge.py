@@ -1,7 +1,7 @@
 import os
 import glob
 import subprocess
-from cohpy.misc import Logger
+from seqfam.misc import Logger
 
 
 class SGE(object):

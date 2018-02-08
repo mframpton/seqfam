@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from collections import OrderedDict
 import time
-from cohpy.misc import Logger
+from seqfam.misc import Logger
 import sys
 from natsort import natsorted
 from itertools import groupby

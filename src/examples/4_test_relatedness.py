@@ -1,5 +1,5 @@
 import os
-from cohpy.relatedness import Relatedness
+from seqfam.relatedness import Relatedness
 import pandas as pd
 
 '''Create the relatedness object.'''

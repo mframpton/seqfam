@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from cohpy.gene_burden import CMC
+from seqfam.gene_burden import CMC
 import sys
 
 

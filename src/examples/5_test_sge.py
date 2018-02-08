@@ -1,5 +1,5 @@
 import os
-from cohpy.sge import SGE
+from seqfam.sge import SGE
 import sys
 #import pathlib
 

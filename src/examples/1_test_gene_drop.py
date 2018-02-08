@@ -1,6 +1,6 @@
 import os
 import sys
-from cohpy.gene_drop import Cohort
+from seqfam.gene_drop import Cohort
 
 
 '''Create cohort object from cohort.tsv file.'''

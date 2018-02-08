@@ -4,7 +4,7 @@ import statsmodels.discrete.discrete_model as sm
 from scipy import stats
 stats.chisqprob = lambda chisq, df: stats.chi2.sf(chisq, df)
 import sys
-from cohpy.misc import Logger
+from seqfam.misc import Logger
 import operator
 from collections import OrderedDict
 

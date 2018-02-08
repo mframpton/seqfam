@@ -1,5 +1,5 @@
 import pandas as pd
-from cohpy.pof import Family,Pof
+from seqfam.pof import Family,Pof
 
 
 '''Create some example families.'''    
