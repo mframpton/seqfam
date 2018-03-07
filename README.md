@@ -22,4 +22,4 @@ The repository contains additional scripts in *src/examples* which demonstrate t
 
 If the package is used to generate data for a publication, you must cite the following article:
 
-Matthew Frampton, Elena Schiff, Nikolas Pontikos, Adam P. Levine, Anthony Segal (2018) Seqfam: a python package for analysis of next generation sequencing DNA data in families. *(Under review)*
+Matthew Frampton, Elena R. Schiff, Nikolas Pontikos, Anthony W. Segal, Adam P. Levine (2018) Seqfam: a python package for analysis of next generation sequencing DNA data in families. *F1000Research* https://f1000research.com/articles/7-281/v1
