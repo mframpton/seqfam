@@ -4,7 +4,7 @@ from seqfam.gene_drop import Cohort
 
 
 '''Create cohort object from cohort.tsv file.'''
-data_dir = os.path.join("..","..","data")
+data_dir = os.path.join("..","data")
 cohort_tsv = os.path.join(data_dir,"cohort.tsv")
 cohort = Cohort(cohort_tsv)
 #print(help(cohort))

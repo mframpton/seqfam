@@ -5,7 +5,7 @@ import sys
 
 
 '''Set paths.'''
-data_dir = os.path.abspath(os.path.join("..","..","data","gene_burden"))
+data_dir = os.path.abspath(os.path.join("..","data","gene_burden"))
 genotypes_path = os.path.join(data_dir,".".join(["variant_genotypes.csv"]))
 samples_path = os.path.join(data_dir,".".join(["samples","csv"]))
 covariates_path = os.path.join(data_dir,".".join(["covariates","csv"]))

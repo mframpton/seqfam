@@ -18,7 +18,7 @@ def get_map_task_l(chr_l):
 
 
 '''Set the script and data directory.'''
-script_dir = os.path.abspath(os.path.join("..","..","data","sge"))
+script_dir = os.path.abspath(os.path.join("..","data","sge"))
 #pathlib.Path(script_dir).mkdir(parents=True, exist_ok=True) 
 if not os.path.exists(script_dir):
     os.makedirs(script_dir)
