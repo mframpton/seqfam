@@ -1,4 +1,4 @@
 include examples/src/*
-inlucde examples/data/cohort.tsv
+include examples/data/cohort.tsv
 include examples/data/gene_burden/*.csv
 include examples/data/relatedness/*
