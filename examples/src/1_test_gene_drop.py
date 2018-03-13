@@ -1,12 +1,10 @@
-from definitions import ROOT_DIR
 import os
 import sys
 from seqfam.gene_drop import Cohort
 
 
 '''Create cohort object from cohort.tsv file.'''
-#data_dir = os.path.join("..","data")
-data_dir = os.path.join(ROOT_DIR,"examples","data")
+data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","data"))
 cohort_tsv = os.path.join(data_dir,"cohort.tsv")
 cohort = Cohort(cohort_tsv)
 #print(help(cohort))

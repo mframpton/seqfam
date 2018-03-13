@@ -3,8 +3,9 @@ from seqfam.relatedness import Relatedness
 import pandas as pd
 
 '''Create the relatedness object.'''
-wf_file = os.path.abspath(os.path.join("..","data","relatedness",".".join(["king","kinship","ibs"])))
-cohort_tsv = os.path.abspath(os.path.join("..","data",".".join(["cohort","tsv"])))
+data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","data"))
+wf_file = os.path.join(data_dir,"relatedness",".".join(["king","kinship","ibs"]))
+cohort_tsv = os.path.join(data_dir,"cohort.tsv")
 relatedness = Relatedness(wf_file=wf_file,cohort_tsv=cohort_tsv,bf_file=None)
 
 '''Within-family duplicates'''
