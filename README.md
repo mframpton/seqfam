@@ -24,8 +24,8 @@ Modules
 4.	*relatedness.py*: identification of duplicates and verification of ascertained pedigree information via kinship coefficients;
 5.	*sge.py*: Sun Grid Engine (SGE) array job creation.
 
-Tests
-=====
+Example scripts
+===============
 
 The repository contains additional scripts in *src/examples* which demonstrate the functionality of the modules on example data, including files in the *data* directory. They are *1_test_gene_drop.py*, *2_test_pof.py*, *3_test_gene_burden.py*, *4_test_relatedness.py*, and *5_test_sge.py*.
 
