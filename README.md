@@ -3,7 +3,16 @@
 Requirements
 ============
 
-*Seqfam* is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6, but can also be run by Python 2.7. It requires various data analysis libraries/packages such as *Pandas*. The user can acquire almost all of these by downloading and installing the *Anaconda* python distribution. The *StatsModels* module, which is not in the *Anaconda* distribution, is also required. Having cloned the repository, run the command ```python setup.py install```.
+*Seqfam* is compatible with Windows, Mac OS X and Linux operating systems. It is coded using Python 3.6 but can also be run by Python 2.7. It requires the following packages:
+
+* pandas==0.20.3
+* scipy==0.19.1
+* natsort==5.1.1
+* numpy==1.13.3
+* setuptools==38.4.0
+* statsmodels==0.8.0
+
+Having cloned the repository, run the command ```python setup.py install```.
 
 Modules
 =======
