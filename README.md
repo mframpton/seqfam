@@ -27,7 +27,7 @@ Modules
 Example scripts
 ===============
 
-The repository contains additional scripts in *src/examples* which demonstrate the functionality of the modules on example data, including files in the *data* directory. They are *1_test_gene_drop.py*, *2_test_pof.py*, *3_test_gene_burden.py*, *4_test_relatedness.py*, and *5_test_sge.py*.
+The repository contains additional scripts in *src/examples* which demonstrate the functionality of the modules on example data, including files in the *data* directory. They are *1_example_gene_drop.py*, *2_example_pof.py*, *3_example_gene_burden.py*, *4_example_relatedness.py*, and *5_example_sge.py*.
 
 If the package is used to generate data for a publication, you must cite the following article:
 
