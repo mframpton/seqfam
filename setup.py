@@ -1,10 +1,10 @@
 from setuptools import setup
 
 setup(
-    name='Seqfam',
-    version='0.1',
+    name='seqfam',
+    version='1.0',
     packages=['seqfam',],
-    license='Creative Commons Attribution-Noncommercial-Share Alike license',
+    license='GNU General Public License v3.0',
     long_description=open('README.md').read(),
     author="Matthew Frampton",
     author_email="mjeframpton@gmail.com",
