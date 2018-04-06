@@ -48,7 +48,7 @@ class CMC(object):
         self.sample_s = self.sample_s[self.sample_s != 0]
         self.geno_df = geno_df
         geno_df[self.sample_s.index] = geno_df[self.sample_s.index].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
-        geno_df[self.sample_s.index].fillna(0, inplace=True)
+        geno_df.loc[:,self.sample_s.index].fillna(0, inplace=True)
         self.covar_df = covar_df
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
