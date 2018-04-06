@@ -20,9 +20,9 @@ sample_s = sample_s[sample_s != 0]
 variant_col,gene_col = "VARIANT_ID","Gene"
 pop_frq_col_l = ["database1_AF","database2_AF","database3_AF"]
 geno_df = pd.read_csv(genotypes_path, dtype=str, usecols=[variant_col,gene_col] + pop_frq_col_l + sample_s.index.tolist(), index_col=variant_col)
-geno_df[pop_frq_col_l] = geno_df[pop_frq_col_l].apply(pd.to_numeric, axis=1)
-geno_df[sample_s.index] = geno_df[sample_s.index].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
-geno_df.loc[:,sample_s.index].fillna(0, inplace=True)
+geno_df.loc[:,pop_frq_col_l] = geno_df.loc[:,pop_frq_col_l].apply(pd.to_numeric, axis=1)
+geno_df.loc[:,sample_s.index] = geno_df.loc[:,sample_s.index].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
+geno_df.loc[:,sample_s.index] = geno_df.loc[:,sample_s.index].fillna(0)
 
 '''Read the covariates into a DataFrame.'''
 covar_df = None if covariates_path == None else pd.read_csv(covariates_path, index_col=0)
