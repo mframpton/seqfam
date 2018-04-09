@@ -35,9 +35,9 @@ class Family(object):
 		'''Check whether a variant passes in the family.
 		
 		Args:
-			variant_genotypes_s (Series): the genotypes of family members for the variant of interest.
-			no_call (str): how a no-call is represented in the genotype data.
-			carrier_call (list of strs): genotypes which correspond to carrying the variant.
+			| variant_genotypes_s (Series): the genotypes of family members for the variant of interest.
+			| no_call (str): how a no-call is represented in the genotype data.
+			| carrier_call (list of strs): genotypes which correspond to carrying the variant.
 		
 		Returns:
 			boolean: whether the variant passes.
