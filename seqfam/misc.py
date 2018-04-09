@@ -2,6 +2,7 @@ from datetime import datetime
 
 
 class Logger(object):
+    '''Class for time-stamped logging.'''
     
     def log(self, txt): 
         '''Prints a time-stamped text string.
