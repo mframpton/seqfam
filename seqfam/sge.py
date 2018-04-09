@@ -5,6 +5,7 @@ from seqfam.misc import Logger
 
 
 class SGE(object):
+	'''This class can create the scripts required for submitting and running an array job on a computer cluster with a Sungrid Engine job scheduler.'''
 	
 	def __init__(self, scripts_dir):
 		self.logger = Logger()
