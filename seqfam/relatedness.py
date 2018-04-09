@@ -131,8 +131,8 @@ class Relatedness(object):
         '''For 1 individual, get a series containing lists of their siblings, parents and grandparents.
         
         Args:
-            ind (str): individual ID 
-            fam_df (DataFrame): contains the pedigree information for a family.
+            | ind (str): individual ID 
+            | fam_df (DataFrame): contains the pedigree information for a family.
         
         Returns:
             relations_s (Series): contains lists of the individual's siblings, parents and grandparents.'''
