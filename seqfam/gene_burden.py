@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 
 class CMC(object):
+    '''Implements the combined multivariate and collapsing (CMC) burden test, where the multivariate test is a log-likelihood ratio test.'''
     
     def __init__(self):
     
@@ -25,16 +26,16 @@ class CMC(object):
         '''Main method for doing multivariate tests.
         
         Args:
-            sample_s (Series): contains samples and affection status.
-            geno_df (DataFrame): contains variants annotations (the group and aggregate columns) and genotypes.
-            group_col (str): column by which to group variants (1 test per group e.g. gene/functional unit).
-            agg_col (str): column by which to aggregate variants e.g. allele population frequency.
-            agg_val_l (list of strs): names of the aggregated categories.
-            covar_df (DataFrame): contains covariates.
-            results_path (str): path to results file.
+            | sample_s (Series): index is the sample names, and values are 1/2 (unaffected/affected).
+            | geno_df (DataFrame): index is the variant ID and columns are (1) gene/functional unit; (2) alternate allele frequency; (3) sample genotypes.
+            | group_col (str): column by which to group variants (1 test per group e.g. gene/functional unit).
+            | agg_col (str): column by which to aggregate variants e.g. allele population frequency.
+            | agg_val_l (list of strs): names of aggregated categories.
+            | covar_df (DataFrame): index is the covariate names and columns are the samples.
+            | results_path (str): path to results file.
         
         Returns:
-            result_df (DataFrame): multivariate test results.
+            result_df (DataFrame): multivariate test results, where the index is gene/functional unit and columns are (1) # variants in each aggregated (& unaggregated) category; (2) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (4) coefficient & p-value for each independent variable (excluding covariates).
         '''
         
         #Set object attributes.
@@ -68,6 +69,7 @@ class CMC(object):
             result_df.sort_values(by="llr_cov_p", inplace=True)
         self.logger.log("Write results.")
         result_df.to_csv(results_path, index=True)
+        print(result_df)
         return result_df
     
     
@@ -75,10 +77,10 @@ class CMC(object):
         '''Aggregate genotypes within variant population frequency categories.
         
         Args:
-            geno_df (DataFrame): contains the sample genotypes, variant identifier, gene identifier and population frequencies.
+            geno_df (DataFrame): index is the variant ID and columns are (1) gene/functional unit; (2) alternate allele frequency; (3) sample genotypes.
             
         Returns:
-            geno_agg_df (DataFrame): contains the genotypes aggregated within variant population frequency categories.
+            geno_agg_df (DataFrame): index is the gene & variant aggregation category, and columns are the # of variants for each sample.
         '''
 
         self.logger.log("For each gene, count the # of variants in each aggregation category.")
@@ -94,19 +96,19 @@ class CMC(object):
         '''Assign variants to allele population frequency categories.
         
         Args:
-            geno_df (DataFrame): contains variant identified and population frequencies.
-            pop_frq_col_l (list of str): contains the names of the population allele frequency columns in descending order of preference.
-            pop_frq_cat_dict (dict of (str,float)): mapping of frequency category name to exclusive upper bound. 
+            | geno_df (DataFrame): contains variant identified and population frequencies.
+            | pop_frq_col_l (list of str): contains the names of the population allele frequency columns in descending order of preference.
+            | pop_frq_cat_dict (dict of (str,float)): mapping of frequency category name to exclusive upper bound. 
         
         Returns:
-            geno_df (DataFrame): the same DataFrame which is given as input with an extra column called "pop_frq_cat".
+            geno_df (DataFrame): the inputted geno_df DataFrame with an extra column for the variant aggregation category ("pop_frq_cat").
         '''
         
         self.logger.log("Assign variants to a population frequency category.")
         pop_frq_cat_dict = OrderedDict(sorted(pop_frq_cat_dict.items(),key=operator.itemgetter(1)))
         pop_frq_cat_l = list(pop_frq_cat_dict.keys())
         pop_frq_bin_arr = np.array(list(pop_frq_cat_dict.values()))
-        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: np.isnan(x) == False, row_s.ix[pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
+        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: pd.notnull(x), row_s.ix[pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
         pop_frq_idx_arr = np.digitize(pop_frq_s.values,pop_frq_bin_arr)
         geno_df = geno_df.join(pd.Series(data=pop_frq_idx_arr, index=pop_frq_s.index, name="pop_frq_cat_idx"))
         geno_df["pop_frq_cat"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == pop_frq_bin_arr.size else pop_frq_cat_l[row_s["pop_frq_cat_idx"]], axis=1)
@@ -118,12 +120,12 @@ class CMC(object):
         '''Do a multivariate test for 1 gene.
         
         Args:
-            geno_agg_gene_df (DataFrame): contains the genotypes for 1 gene aggregated in by the aggregation column e.g. by population allele frequency.
-            y (numpy.ndarray): affection status where 1=affected and 0=unaffected. 
-            covar_df (DataFrame): contains the covariates. 
+            | geno_agg_gene_df (DataFrame): index is the gene & variant aggregation category, and columns are the # of variants for each sample.
+            | y (numpy.ndarray): values are 0/1 (unaffected/affected). 
+            | covar_df (DataFrame): index is the covariate names and columns are samples.
             
         Returns:
-            test_result_s (Series): contains the multivariate test results.
+            test_result_s (Series): multivariate test results for 1 gene/functional unit containing (1) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (2) coefficient & p-value for each independent variable (exc. covariates).
         '''
         
         geno_agg_gene_df.index = geno_agg_gene_df.index.droplevel() #Drop the group name so it won't be in the agg cat variable names.
@@ -148,8 +150,8 @@ class CMC(object):
         '''Fit a logit model.
         
         Args:
-            X_df: the independent variables (covariates and or aggregated genotypes) for 1 gene. 
-            y (numpy.ndarray): sample affection status where 1=affected and 0=unaffected. 
+            | X_df: the independent variables (covariates and or aggregated genotypes) for 1 gene. 
+            | y (numpy.ndarray): values are 0/1 (unaffected/affected). 
         Returns:
             logit_result (statsmodels.discrete.discrete_model.BinaryResultsWrapper): contains results from fitting logit regression model.
         '''
@@ -163,10 +165,10 @@ class CMC(object):
         '''For each gene, get the number of variants in each population frequency category.
         
         Args:
-            geno_agg_df (DataFrame): contains the genotypes aggregated by the aggregation column in each gene.
+            geno_agg_df (DataFrame): index is the gene & variant aggregation category, and columns are the # of variants for each sample.
             
         Returns:
-            agg_cat_count_df (DataFrame): contains the number of variants in each aggregtion category in each group.
+            agg_cat_count_df (DataFrame): index is the gene and columns are # variants in each aggregated category and # unaggregated.
         '''
         
         agg_cat_count_df = geno_agg_df['n'].reset_index()
