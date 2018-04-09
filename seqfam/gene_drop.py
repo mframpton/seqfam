@@ -58,8 +58,8 @@ class NodeGenerator(object):
         '''Set the relationships between the nodes.
         
         Args:
-            ped_row_s (Series): row from a pedigree dataframe, representing 1 individual.
-            name_node_dict (dictionary): maps from node name to node.'''
+            | ped_row_s (Series): row from a pedigree dataframe, representing 1 individual.
+            | name_node_dict (dictionary): maps from node name to node.'''
         
         [person,father,mother] = ped_row_s[["PERSON","FATHER","MOTHER"]].tolist()
         if father != "0":
@@ -86,8 +86,8 @@ class FamilyTree(object):
         '''Main method for performing gene dropping for 1 variant in this family tree.
         
         Args:
-            pop_af (float): population allele frequency of the variant.
-            ind_gtyped_l (list of strs): IDs of individuals in this family who have a genotype for the variant. 
+            | pop_af (float): population allele frequency of the variant.
+            | ind_gtyped_l (list of strs): IDs of individuals in this family who have a genotype for the variant. 
         Returns:
             carrier_allele_count (int): the number of (genotyped) carriers in the family after dropping the gene.'''
         
@@ -201,10 +201,10 @@ class Cohort(object):
         '''Perform gene dropping across the cohort and return the proportion of iterations in which the simulated allele frequency is less than or equal to the cohort frequency.
         
         Args:
-            pop_af (float): population allele frequency.
-            cohort_af (float): cohort allele frequency.
-            sample_genotyped (list of strs): the list of samples genotyped for this variant from which cohort af was calculated.
-            gene_drop_n (int): number of iterations to perform.
+            | pop_af (float): population allele frequency.
+            | cohort_af (float): cohort allele frequency.
+            | sample_genotyped (list of strs): the list of samples genotyped for this variant from which cohort af was calculated.
+            | gene_drop_n (int): number of iterations to perform.
         
         Returns:
             cohort_enriched_p (float): proportion of iterations in which the simulated allele frequency is less than or equal to the cohort frequency.'''
