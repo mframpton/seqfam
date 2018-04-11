@@ -64,17 +64,23 @@ The scripts are *1_example_gene_drop.py*, *2_example_pof.py*, *3_example_gene_bu
 The reader can also refer to Table 1 for a summary of the main user functions of the 5 seqfam modules, which includes their input/output.
 Data in the example data files are derived from the whole exome sequencing of a large cohort of over 200 families with inflammatory bowel disease (unpublished study1).
 
-+-------------+--------------------+------------------------------+
-| Module      | Method (Class)     | Description                  |
-+=============+====================+==============================+
-| gene_drop   | gene_drop (Cohort) | Monte Carlo gene dropping    |
-+-------------+--------------------+------------------------------+
-| pof         | get_family_pass_name_l                            |
-+-------------+--------------------+------------------------------+
-| gene_burden | Cells may          | - Cells                      |
-+-------------+ span rows.         | - contain                    |
-| body row 4  |                    | - blocks.                    |
-+-------------+--------------------+------------------------------+
+.. table:: Table 1. Summary of main user functions in seqfam modules
+
+   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | Module      | Method (Class)                | Description                                                                         | Input                                                                                                        | Output                                                           |
+   +=============+===============================+=====================================================================================+==============================================================================================================+==================================================================+
+   | gene_drop   | gene_drop (Cohort)            | Monte Carlo gene dropping                                                           | Cohort tsv file (pedigree info), variant population AF, cohort AF, list of samples genotyped, # interactions | p-value                                                          |
+   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | pof         | get_family_pass_name_l        | Variant POF with respect to affected (& unaffected) members                         | Variant POF rule & genotypes                                                                                 | List of families whose POF rules is passed by variant            |
+   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | gene_burden | do_multivariate_tests (CMC)   | Regression-based gene burden testing                                                | Files containing samples, genotypes & covariates files; output path                                          | Data frame and csv file containing burden test results           |
+   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   |             | find_duplicates (Relatedness) | Identify duplicates from kinship coefficient                                        | King file                                                                                                    | List of duplicates                                               |
+   | relatedness +-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   |             | get_exp_obs_df (Relatedness)  | Map pedigrees & kinship coefficients to expected & observed degrees of relationship | Cohort tsv, KING within-family sample pair kinship coefficient file                                          | Data frame of expected & observed degrees of relationship        |
+   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | sge         | make_map_reduce_jobs (SGE)    | Make computer cluster array job scripts.                                            | Filename prefix, lists of map tasks, map tasks to execute and reduce tasks.                                  | Scripts required to run array job including master submit script |
+   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
 
 gene_drop
 =========
