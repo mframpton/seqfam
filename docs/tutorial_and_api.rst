@@ -64,6 +64,18 @@ The scripts are *1_example_gene_drop.py*, *2_example_pof.py*, *3_example_gene_bu
 The reader can also refer to Table 1 for a summary of the main user functions of the 5 seqfam modules, which includes their input/output.
 Data in the example data files are derived from the whole exome sequencing of a large cohort of over 200 families with inflammatory bowel disease (unpublished study1).
 
++-------------+--------------------+------------------------------+
+| Module      | Method (Class)     | Description                  |
++=============+====================+==============================+
+| gene_drop   | gene_drop (Cohort) | Monte Carlo gene dropping    |
++-------------+--------------------+------------------------------+
+| pof         | get_family_pass_name_l                            |
++-------------+--------------------+------------------------------+
+| gene_burden | Cells may          | - Cells                      |
++-------------+ span rows.         | - contain                    |
+| body row 4  |                    | - blocks.                    |
++-------------+--------------------+------------------------------+
+
 gene_drop
 =========
 
