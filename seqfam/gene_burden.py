@@ -74,7 +74,7 @@ class CMC(object):
             result_df.sort_values(by="llr_cov_p", inplace=True)
         self.logger.log("Write results.")
         result_df.to_csv(results_path, index=True)
-        print(result_df)
+        self.logger.log("\n"+result_df.to_string())
         return result_df
     
     
@@ -113,7 +113,7 @@ class CMC(object):
         pop_frq_cat_dict = OrderedDict(sorted(pop_frq_cat_dict.items(),key=operator.itemgetter(1)))
         pop_frq_cat_l = list(pop_frq_cat_dict.keys())
         pop_frq_bin_arr = np.array(list(pop_frq_cat_dict.values()))
-        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: pd.notnull(x), row_s.ix[pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
+        pop_frq_s = geno_df.apply(lambda row_s: list(filter(lambda x: pd.notnull(x), row_s.loc[pop_frq_col_l].tolist()+[0.0]))[0],axis=1)
         pop_frq_idx_arr = np.digitize(pop_frq_s.values,pop_frq_bin_arr)
         geno_df = geno_df.join(pd.Series(data=pop_frq_idx_arr, index=pop_frq_s.index, name="pop_frq_cat_idx"))
         geno_df["pop_frq_cat"] = geno_df.apply(lambda row_s: row_s.name if row_s["pop_frq_cat_idx"] == pop_frq_bin_arr.size else pop_frq_cat_l[row_s["pop_frq_cat_idx"]], axis=1)
