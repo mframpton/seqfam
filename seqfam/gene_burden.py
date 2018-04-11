@@ -56,6 +56,11 @@ class CMC(object):
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
         geno_agg_df = self.aggregate_by_agg_col(geno_df)
+        self.logger.log("Retain groups which have >= 1 non-zero genotype.")
+        all_zero_s = geno_agg_df[self.sample_s.index].groupby(level=group_col).apply(lambda df: df.values.sum()==0)
+        if all_zero_s.size > 0:
+            self.logger.log("Dropped because they have all zero genotypes: {0}".format(",".join(all_zero_s[all_zero_s==True].index.tolist())))
+            geno_agg_df = geno_agg_df.ix[all_zero_s[all_zero_s==False].index,:]
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
         result_df = geno_agg_df[self.sample_s.index].groupby(level=[self.group_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
