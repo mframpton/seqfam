@@ -29,8 +29,9 @@ covar_df = None if covariates_path == None else pd.read_csv(covariates_path, ind
 
 '''Do gene burden (CMC) tests.'''
 cmc = CMC()
-geno_df = cmc.assign_variants_to_pop_frq_cats(geno_df, pop_frq_col_l, {"rare":0.01,"mod_rare":0.05})
-cmc_result_df = cmc.do_multivariate_tests(sample_s, geno_df, group_col=gene_col, agg_col="pop_frq_cat", agg_val_l=["rare","mod_rare"], covar_df=covar_df, results_path=results_path)
+pop_frq_cat_dict = {"rare":0.01,"mod_rare":0.05}
+geno_df = cmc.assign_variants_to_pop_frq_cats(geno_df, pop_frq_col_l, pop_frq_cat_dict)
+cmc_result_df = cmc.do_multivariate_tests(sample_s, geno_df, group_col=gene_col, agg_col="pop_frq_cat", agg_val_l=list(pop_frq_cat_dict.keys()), covar_df=covar_df, results_path=results_path)
 print(cmc_result_df)
 #Uncomment the following 2 lines to run with the tests without the covariates.
 #cmc_result_df = cmc.do_multivariate_tests(sample_s, geno_df, group_col=gene_col, agg_col="pop_frq_cat", agg_val_l=["rare","mod_rare"], covar_df=None, results_path=results_path)
