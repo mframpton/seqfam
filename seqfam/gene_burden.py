@@ -215,6 +215,7 @@ class CMC(object):
         
         ca_l,co_l = self.sample_s[self.sample_s["Affection"]==2].index.tolist(), self.sample_s[self.sample_s["Affection"]==1].index.tolist()
         prop_df = pd.concat([get_prop_s(geno_agg_df,ca_l,"aff_p"),get_prop_s(geno_agg_df,co_l,"unaff_p")], axis=1)
+        prop_df.reset_index(inplace=True)
 
         def pivot_prop_df(prop_df, affection):
             agg_cat_prop_df = pd.pivot_table(data=prop_df, values="{0}_p".format(affection), index=self.group_col, columns=self.agg_col)
@@ -224,6 +225,7 @@ class CMC(object):
             return agg_cat_prop_df
 
         agg_cat_prop_df = (pivot_prop_df(prop_df,"aff")).merge(pivot_prop_df(prop_df,"unaff"), left_index=True, right_index=True)
+        agg_cat_prop_df = agg_cat_prop_df.reindex(columns=["{0}_{1}_p".format(agg_cat,affection) for agg_cat in self.agg_val_l + ["unagg"] for affection in ["aff","unaff"]])
         
         return agg_cat_prop_df 
     
