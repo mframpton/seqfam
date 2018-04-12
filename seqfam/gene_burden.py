@@ -67,6 +67,7 @@ class CMC(object):
         #Merge the results with the collapsed variant counts.
         self.logger.log("Merge the results with the population frequency variant category counts...")
         agg_cat_count_df = self.get_agg_cat_count_df(geno_agg_df)
+        agg_cat_count_df = agg_cat_count_df.join(self.get_agg_cat_count_by_affection(geno_agg_df))
         result_df = agg_cat_count_df.join(result_df)
         if covar_df is None:
             result_df.sort_values(by="llr_p", inplace=True)
@@ -136,19 +137,36 @@ class CMC(object):
         geno_agg_gene_df.index = geno_agg_gene_df.index.droplevel() #Drop the group name so it won't be in the agg cat variable names.
         logit_result = self.fit_logit_model(geno_agg_gene_df,y)
         test_result_l = [("llr_p",logit_result.llr_pvalue)]
+        coef_pval_l = None
         if covar_df is not None:
-            '''Model with only covariates'''
+            #Model with only covariates
             logit_result_h0 = self.fit_logit_model(covar_df,y)
-            '''Model with covariates plus aggregated variant independent variables.'''
+            #Model with covariates plus aggregated variant independent variables
             logit_result_h1 = self.fit_logit_model(pd.concat([covar_df, geno_agg_gene_df]),y)
             llr_cov_p = stats.chisqprob(2*(logit_result_h1.llf - logit_result_h0.llf), logit_result_h1.df_model - logit_result_h0.df_model)
             test_result_l.append(("llr_cov_p",llr_cov_p))
-            h1_coef_l = [(agg_cat+"_c",logit_result_h1.params.loc[agg_cat]) if agg_cat in logit_result_h1.params.index else (agg_cat+"_c",np.NaN) for agg_cat in self.agg_val_l]
-            h1_pval_l = [(agg_cat+"_p",logit_result_h1.pvalues.loc[agg_cat]) if agg_cat in logit_result_h1.pvalues.index else (agg_cat+"_p",np.NaN) for agg_cat in self.agg_val_l]
-            h1_coef_pval_l = [item for sublist in zip(h1_coef_l,h1_pval_l) for item in sublist]
-            test_result_l.extend(h1_coef_pval_l)
+            coef_pval_l = self.get_coef_pval_l(logit_result_h1, covar_b=True)
+        else:
+            coef_pval_l = self.get_coef_pval_l(logit_result, covar_b=False)
+        test_result_l.extend(coef_pval_l)
         test_result_s = pd.Series(OrderedDict(test_result_l))
         return test_result_s
+    
+    
+    def get_coef_pval_l(self, logit_result, covar_b=False):
+        '''Get the coefficients and corresponding p-values of the aggregated independent variables in the logit model.
+        
+        Args:
+            | logit_result (statsmodels.discrete.discrete_model.BinaryResultsWrapper): contains results from fitting logit regression model.
+        Returns:
+            coef_pval_l (list): list of coefficients and corresponding p-values.
+        '''
+        
+        ind_var_l = self.agg_val_l if covar_b == False else self.agg_val_l + self.covar_df.index.tolist()
+        coef_l = [(agg_cat+"_c",logit_result.params.loc[agg_cat]) if agg_cat in logit_result.params.index else (agg_cat+"_c",np.NaN) for agg_cat in ind_var_l]
+        pval_l = [(agg_cat+"_p",logit_result.pvalues.loc[agg_cat]) if agg_cat in logit_result.pvalues.index else (agg_cat+"_p",np.NaN) for agg_cat in ind_var_l]
+        coef_pval_l = [item for sublist in zip(coef_l,pval_l) for item in sublist]
+        return coef_pval_l
     
     
     def fit_logit_model(self, X_df, y):
@@ -183,4 +201,30 @@ class CMC(object):
         agg_cat_count_df.fillna(0, inplace=True)
         agg_cat_count_df = agg_cat_count_df.apply(pd.to_numeric, downcast='integer', axis=1)
         return agg_cat_count_df
+    
+    
+    def get_agg_cat_count_by_affection(self, geno_agg_df):
         
+        geno_agg_df = geno_agg_df.reset_index()
+        geno_agg_df[self.agg_col] = geno_agg_df[self.agg_col].apply(lambda x: x if x in self.agg_val_l else "unagg")
+        
+        def get_prop_s(geno_agg_df, sample_l, name):
+            prop_s = geno_agg_df.groupby([self.group_col,self.agg_col]).apply(lambda group: group[sample_l].values.mean())
+            prop_s.name = name
+            return prop_s
+        
+        ca_l,co_l = self.sample_s[self.sample_s["Affection"]==2].index.tolist(), self.sample_s[self.sample_s["Affection"]==1].index.tolist()
+        prop_df = pd.concat([get_prop_s(geno_agg_df,ca_l,"aff_p"),get_prop_s(geno_agg_df,co_l,"unaff_p")], axis=1)
+        print(prop_df)
+
+        def pivot_prop_df(prop_df, affection):
+            agg_cat_prop_df = pd.pivot_table(data=prop_df, values="{0}_p".format(affection), index=self.group_col, columns=self.agg_col)
+            column_rename_dict = dict(zip(agg_cat_prop_df.columns.tolist(),["{0}_{1}".format(col,"{0}_p".format(affection)) for col in agg_cat_prop_df.columns.tolist()]))
+            agg_cat_prop_df.rename(columns=column_rename_dict, inplace=True)
+            agg_cat_prop_df = agg_cat_prop_df.reindex(columns=["{0}_{1}_p".format(agg_val,affection) for agg_val in self.agg_val_l + ["unagg"]])
+            return agg_cat_prop_df
+
+        agg_cat_prop_df = (pivot_prop_df(prop_df,"aff")).merge(pivot_prop_df(prop_df,"unaff"), left_index=True, right_index=True)
+        
+        return agg_cat_prop_df 
+    
