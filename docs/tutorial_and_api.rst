@@ -104,13 +104,13 @@ It then performs a depth-first traversal starting from each founder (1 per spous
 Thus, every individual in the family is assigned a genotype.
 
 The only input file for *1_example_gene_drop.py* is cohort.tsv, which contains the pedigree information for an example familial cohort.
-This cohort has 3,608 samples from 251 families, and the complexity of the families, calculated as 2n-f where n and f are the number of non-founders and founders respectively (Abecasis et al., 2002), has median 9 and range 0–103.
+This cohort has 3,608 samples from 251 families, and the complexity of the families, calculated as *2n-f* where n and f are the number of non-founders and founders respectively (Abecasis et al., 2002), has median 9 and range 0–103.
 The cohort.csv file is in fam file format (Purcell et al., 2007), meaning it has 1 row per individual and 6 columns for family ID, person ID, father, mother, sex and affection.
 
-The *1_example_gene_drop.py* script first creates a Cohort object from cohort.tsv, which stores each family tree, then calls the gene_drop method with the following arguments: pop_af and cohort_af are the allele frequency of a particular variant in the general population and cohort respectively, sample_genotyped_l is the list of cohort samples with a genotype, and gene_drop_n is the number of iterations of gene dropping to perform.
-Hence the samples in sample_genotyped_l are used by the user to calculate cohort_af, and by the method to calculate the simulated cohort allele frequencies.
+The *1_example_gene_drop.py* script first creates a Cohort object from *cohort.tsv*, which stores each family tree, then calls the *gene_drop* method with the following arguments: *pop_af* and *cohort_af* are the allele frequency of a particular variant in the general population and cohort respectively, *sample_genotyped_l* is the list of cohort samples with a genotype, and *gene_drop_n* is the number of iterations of gene dropping to perform.
+Hence the samples in *sample_genotyped_l* are used by the user to calculate *cohort_af*, and by the method to calculate the simulated cohort allele frequencies.
 The method returns a p-value.
-The script calls the gene_drop method with ascending values for cohort_af, and so descending p-values are returned.
+The script calls the *gene_drop* method with ascending values for *cohort_af*, and so descending p-values are returned.
 
 .. code-block:: python
        
@@ -141,20 +141,20 @@ The authors are unaware of existing software packages for performing these analy
 The *gene_drop.py* module can be considered complementary to the RVsharing R package :cite:`Bureau2014`, which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
 
 For each family, the user can use the *pof.py* module to define a variant pattern of occurrence rule and check whether any supplied variants pass.
-The rule can specify a minimum value for the proportion of affected members (As) who are carriers (A.carrier.p), and/or a minimum difference between the proportion of As and unaffected members (Ns) who are carriers (AN.carrier.diff).
-Constraints for the number of genotyped As and Ns can also be added.
+The rule can specify a minimum value for the proportion of affected members (*As*) who are carriers (*A.carrier.p*), and/or a minimum difference between the proportion of *As* and unaffected members (*Ns*) who are carriers (*AN.carrier.diff*).
+Constraints for the number of genotyped *As* and *Ns* can also be added.
 
-As an illustrative example, consider a cohort in which families can be categorised as follows based on their number of As and Ns:
+As an illustrative example, consider a cohort in which families can be categorised as follows based on their number of *As* and *Ns*:
 
-    1. “A4N1”: ≥ 4 As and ≤ 1 N
+    1. *A4N1*: ≥ 4 *As* and ≤ 1 *N*
 
-    2. “A3N2”: ≥ 3 As and ≥ 2 Ns
+    2. *A3N2*: ≥ 3 *As* and ≥ 2 *Ns*
 
-For the A4N1 families, the user may be interested in variants carried by all As and so require A.carrier.p = 1, while for the A3N2 families, they may be interested in variants which are more prevalent in As than Ns and so require AN.carrier.diff ≥ 0.5.
+For the *A4N1* families, the user may be interested in variants carried by all *As* and so require *A.carrier.p* = 1, while for the *A3N2* families, they may be interested in variants which are more prevalent in *As* than *Ns* and so require *AN.carrier.diff* ≥ 0.5.
 
 There are no input files for *2_example_pof.py*.
-The example script first creates a Pof object which stores a couple of Family objects, each representing an example family and its variant pattern of occurrence rule.
-Next it calls the Pof object’s get_family_pass_name_l method with the argument genotypes_s, which is a Pandas Series containing sample genotypes for a particular variant.
+The example script first creates a *Pof* object which stores a couple of *Family* objects, each representing an example family and its variant pattern of occurrence rule.
+Next it calls the *Pof* object’s *get_family_pass_name_l* method with the argument *genotypes_s*, which is a Pandas Series containing sample genotypes for a particular variant.
 The method returns a list of families whose pattern of occurrence rule is passed by this variant.
 
 .. code-block:: python
@@ -199,7 +199,7 @@ For each variant group, having aggregated the variants, *gene_burden.py* will pe
 
    \chi^2 = 2(ll_{h0} - ll_{h1}); df = df_{h1} - df_{h0}
 
-where ll is log-likelihood, h1 is the alternative hypothesis, h0 is the null hypothesis and df is degrees of freedom.
+where *ll* is log-likelihood, *h1* is the alternative hypothesis, *h0* is the null hypothesis and *df* is degrees of freedom.
 Specifically, it is a log-likelihood ratio test on null and alternative hypothesis logit models where the dependent variable is derived from affection status, the variant variables (aggregated and/or unaggregated) are independent variables in the alternative model and the covariates are independent variables in both.
 The logit models are fitted using the Broyden–Fletcher–Goldfarb–Shanno (BFGS) algorithm.
 
@@ -316,7 +316,12 @@ The map tasks requiring execution are map tasks which have not previously comple
 Given these lists, the *sge.py* module can create all necessary scripts/files for submitting and running an array job.
 This includes scripts for all map tasks, a text file specifying that only the map tasks requiring execution should run, and a master executable submit script for submitting the array job to the job scheduler.
 
-There are no input files for 5_test_sge.py. This script first makes lists of map tasks (map_task_l), map tasks to execute (map_task_exec_l), and reduce tasks (reduce_task_l). Here map_tasks_exec_l contains every other map task. Next, the script creates an SGE object which stores the directory where job scripts will be written (here data/sge). Finally, it calls the object’s make_map_reduce_jobs method with the following arguments: a prefix for all job script names (here “test”) and the above 3 lists. This writes the job scripts, and were they for a real array job (they are not), the user could then submit it to the job scheduler by running the master executable submit script data/sge/submit_map_reduce.sh. The test.map_task_exec.txt file specifies which map tasks to run i.e. the map tasks in the map_tasks_exec_l list.
+There are no input files for *5_test_sge.py*. This script first makes lists of map tasks (*map_task_l*), map tasks to execute (*map_task_exec_l*), and reduce tasks (*reduce_task_l*).
+Here *map_tasks_exec_l* contains every other map task.
+Next, the script creates an SGE object which stores the directory where job scripts will be written (here data/sge).
+Finally, it calls the object’s *make_map_reduce_jobs* method with the following arguments: a prefix for all job script names (here “test”) and the above 3 lists.
+This writes the job scripts, and were they for a real array job (they are not), the user could then submit it to the job scheduler by running the master executable submit script data/sge/submit_map_reduce.sh.
+The *test.map_task_exec.txt* file specifies which map tasks to run i.e. the map tasks in the *map_tasks_exec_l* list.
 
 .. code-block:: python
 
