@@ -371,7 +371,7 @@ API reference
 gene_drop
 =========
 
-.. automodule:: gene_drop
+.. automodule:: seqfam.gene_drop
    :members:
 
 gene_burden
