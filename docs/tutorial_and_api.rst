@@ -41,7 +41,7 @@ This section describes the functionality and methods employed by seqfam’s 5 mo
 
 Figure 1 provides a visual representation of modules 1–4.
 
-.. figure:: 10.12688_f1000research.13930.1_f1.png
+.. figure:: module_flowchart.png
     :align: center
     :alt: alternate text
     :figclass: align-center
@@ -110,7 +110,7 @@ The cohort.csv file is in fam file format (Purcell et al., 2007), meaning it has
 The *1_example_gene_drop.py* script first creates a Cohort object from *cohort.tsv*, which stores each family tree, then calls the *gene_drop* method with the following arguments: *pop_af* and *cohort_af* are the allele frequency of a particular variant in the general population and cohort respectively, *sample_genotyped_l* is the list of cohort samples with a genotype, and *gene_drop_n* is the number of iterations of gene dropping to perform.
 Hence the samples in *sample_genotyped_l* are used by the user to calculate *cohort_af*, and by the method to calculate the simulated cohort allele frequencies.
 The method returns a p-value.
-The script calls the *gene_drop* method with ascending values for *cohort_af*, and so descending p-values are returned.
+The script calls the gene_drop method with ascending values for *cohort_af*, and so descending p-values are returned.
 
 .. code-block:: python
        
