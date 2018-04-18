@@ -1,5 +1,7 @@
 # Seqfam
 
+Documentation is at http://seqfam.readthedocs.io/en/latest/ .
+
 Requirements
 ============
 
