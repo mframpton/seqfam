@@ -1,6 +1,7 @@
-pandas==0.20.3
-scipy==0.19.1
-natsort==5.1.1
-numpy==1.13.3
-setuptools==38.4.0
+scipy==1.0.0
+numpy==1.11.3
 statsmodels==0.8.0
+pandas==0.21.0
+setuptools==36.5.0.post20170921
+natsort==5.2.0
+sphinxcontrib-bibtex==0.4.0
