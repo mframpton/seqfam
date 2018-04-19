@@ -90,7 +90,7 @@ The user can run analyses with the *gene_drop.py* and *pof.py* modules to acquir
 Given the structure of the families, Monte Carlo gene dropping can assess whether a variant is enriched in the cohort relative to the general population, and assuming the trait/disease is more prevalent in the cohort, such enrichment supports causality.
 The user can use the *pof.py* module to identify variants which are carried by most or all affected members of a family, or even which segregate between affected and unaffected members.
 The authors are unaware of existing software packages for performing these analyses in familial cohorts, so *gene_drop.py* and *pof.py* fulfil this need.
-The *gene_drop.py* module can be considered complementary to the RVsharing R package :cite:`Bureau2014` which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
+The *gene_drop.py* module can be considered complementary to the *RVsharing* *R* package :cite:`Bureau2014` which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
 
 By default, for each variant of interest, the *gene_drop.py* module performs 10,000 iterations of gene dropping in the familial cohort.
 In each iteration it gene drops in each family once, seeding the founder genotypes based on the population allele frequency.
@@ -371,7 +371,7 @@ API reference
 gene_drop
 =========
 
-.. automodule:: seqfam.gene_drop
+.. automodule:: gene_drop
    :members:
 
 gene_burden
