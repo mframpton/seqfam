@@ -305,60 +305,29 @@ Finally, the script prints the sample pairs which have a different expected and 
 sge
 ===
 
-The final module, *sge.py*, has general utility in running analyses of NGS data (and indeed any “big data”) on computer clusters.
-Many NGS data analyses can be cast as “embarrassingly parallel problems” and hence executed more efficiently on a computer cluster using a “MapReduce pattern”: the overall task is decomposed into independent sub-tasks (“map” tasks), then the map tasks run in parallel and after their completion, a “reduce” action merges/filters/summarises the results.
-For example, gene burden testing across the whole exome can be decomposed into independent sub-tasks by splitting the exome into sub-units e.g. chromosomes.
-Sun Grid Engine (SGE) is a widely used batch-queueing system, and analyses can be performed in a MapReduce pattern on SGE via so-called array jobs.
-The *sge.py* module can be used to automatically create the scripts required for submitting and running an array job.
+The sge.py module has general utility in analysing NGS data, and indeed any big data on computer clusters. Many NGS data analyses can be cast as "embarassingly parallel problems" and hence executed more efficiently on a computer cluster via a "MapReduce pattern": the overall task is decomposed into independent sub-tasks ("map" tasks) which run in parallel, and on their completion, a "reduce" action merges/filters/summarises the results. For example, gene burden testing across the whole exome can be decomposed into independent sub-tasks by splitting the exome into sub-units e.g. chromosomes. Sun Grid Engine (SGE) is a widely used batch-queueing system, and analyses can be performed in a MapReduce pattern on SGE via array jobs. Given a list of map tasks and the reduce task(s), the sge.py module can create the scripts for submitting and running an array job.
 
-To use the *sge.py* module, the user must first create lists of map tasks, map tasks requiring execution and reduce tasks.
-The map tasks requiring execution are map tasks which have not previously completed successfully and hence need to run.
-Given these lists, the *sge.py* module can create all necessary scripts/files for submitting and running an array job.
-This includes scripts for all map tasks, a text file specifying that only the map tasks requiring execution should run, and a master executable submit script for submitting the array job to the job scheduler.
-
-There are no input files for *5_test_sge.py*. This script first makes lists of map tasks (*map_task_l*), map tasks to execute (*map_task_exec_l*), and reduce tasks (*reduce_task_l*).
-Here *map_tasks_exec_l* contains every other map task.
-Next, the script creates an SGE object which stores the directory where job scripts will be written (here data/sge).
-Finally, it calls the object’s *make_map_reduce_jobs* method with the following arguments: a prefix for all job script names (here “test”) and the above 3 lists.
-This writes the job scripts, and were they for a real array job (they are not), the user could then submit it to the job scheduler by running the master executable submit script data/sge/submit_map_reduce.sh.
-The *test.map_task_exec.txt* file specifies which map tasks to run i.e. the map tasks in the *map_tasks_exec_l* list.
+The script 5_example_sge.py provides an example. 
+It first makes lists of map tasks (map_task_l) and map tasks to execute (map_task_exec_l) via the custom get_map_task_l method (see the script), and then a reduce task string (reduce_tasks).
+While map_task_l contains all map tasks, map_task_exec_l contains the subset which have not yet completed successfully and hence need to run.
 
 .. code-block:: python
 
-   import os
-   from seqfam.sge import SGE
-   import sys
-
-   def get_map_task_l(chr_l):
-
-       map_task_l, map_task_exec_l = [],[]
-       for i in range(len(chr_l)):
-           map_task = " ".join(["python","1_map_task.py","--chr",chr_l[i]])
-           map_task_l.append(map_task)
-           #The user can replace the if condition with one confirming output for the map task is absent, and hence it should be in map_task_exec_l. 
-           if i % 2 == 0:
-               map_task_exec_l.append(map_task)
-
-       return [map_task_l,map_task_exec_l]
-
-   #Set the script and data directory.'''
-   data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","data"))
-   script_dir = os.path.join(data_dir,"sge") 
-   if not os.path.exists(script_dir):
-       os.makedirs(script_dir)
-   data_dir = os.path.join(data_dir,"sge")
-
+   from seqfam.sge import SGE   
+   ...
+   print("Making map and reduce tasks...")
    chr_l = [str(chrom) for chrom in range(1,23)] + ["X","Y"]
-   print("Making map tasks...")
    [map_task_l, map_task_exec_l] = get_map_task_l(chr_l)
-   print("Making reduce tasks...")
-   reduce_task_l = [" ".join(["python","2_merge_results.py"])]
-   reduce_task_l.append(" ".join(["python","3_summarise_results.py"]))
-   reduce_task = "\n".join(reduce_task_l)
+   reduce_tasks = "\n".join(["python 2_merge_results.py","python 3_summarise_results.py"])
 
-   print("Writing job scripts...")
+Next, the script creates an SGE object which stores the directory where job scripts will be written (the variable script_dir which here has the value data/sge). Finally it calls the object's make_map_reduce_jobs method with the following arguments: a job script name prefix (here "test"), map_task_l, map_task_exec_l and reduce_tasks.
+
+.. code-block:: python
+   
    sge = SGE(script_dir)
-   sge.make_map_reduce_jobs("test", map_task_l, reduce_task, map_task_exec_l)
+   sge.make_map_reduce_jobs("test", map_task_l, reduce_tasks, map_task_exec_l)
+
+This writes the job scripts, and were they for a real array job (they are not), the user could submit it to the job scheduler by running the master executable submit script data/sge/submit_map_reduce.sh. The generated file test.map_task_exec.txt specifies which map tasks to run (map_tasks_exec_l).
 
 References
 ==========
