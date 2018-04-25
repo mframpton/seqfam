@@ -133,46 +133,32 @@ The script calls the gene_drop method with ascending values for *cohort_af*, and
 pof
 ===
 
-For a rare variant to be considered potentially causal of a particular trait/disease based on in silico analysis, it must satisfy various criteria, such as being biologically plausible and predicted to be pathogenic.
-The user can run analyses with the *gene_drop.py* and *pof.py* modules to acquire additional evidence.
-Given the structure of the families, Monte Carlo gene dropping can assess whether a variant is enriched in the cohort relative to the general population, and assuming the trait/disease is more prevalent in the cohort, such enrichment supports causality.
-The user can use the *pof.py* module to identify variants which are carried by most or all affected members of a family, or even which segregate between affected and unaffected members.
-The authors are unaware of existing software packages for performing these analyses in familial cohorts, so *gene_drop.py* and *pof.py* fulfil this need.
-The *gene_drop.py* module can be considered complementary to the RVsharing R package :cite:`Bureau2014`, which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
+Like *gene_drop.py*, the *pof.py* module can provide additional evidence for whether particular rare variants are causal of a particular trait/disease. It is intended for identifying variants which are carried by most or all affected members of a family, or even which segregate between affected and unaffected members.
 
-For each family, the user can use the *pof.py* module to define a variant pattern of occurrence rule and check whether any supplied variants pass.
-The rule can specify a minimum value for the proportion of affected members (*As*) who are carriers (*A.carrier.p*), and/or a minimum difference between the proportion of *As* and unaffected members (*Ns*) who are carriers (*AN.carrier.diff*).
-Constraints for the number of genotyped *As* and *Ns* can also be added.
+For each family, the user uses the *pof.py* module to define a variant pattern of occurrence rule and check whether any supplied variants pass. The rule can specify a minimum value for the proportion of affected members (*As*) who are carriers (*A_carrier_p*), and/or a minimum difference between the proportion of *As* and unaffected members (*Ns*) who are carriers (*AN_carrier_diff*). Constraints for the number of genotyped *As* and *Ns* can also be added, (*A_n_min* and *N_n_min* respectively).
 
-As an illustrative example, consider a cohort in which families can be categorised as follows based on their number of *As* and *Ns*:
-
-    1. *A4N1*: ≥ 4 *As* and ≤ 1 *N*
-
-    2. *A3N2*: ≥ 3 *As* and ≥ 2 *Ns*
-
-For the *A4N1* families, the user may be interested in variants carried by all *As* and so require *A.carrier.p* = 1, while for the *A3N2* families, they may be interested in variants which are more prevalent in *As* than *Ns* and so require *AN.carrier.diff* ≥ 0.5.
-
-There are no input files for *2_example_pof.py*.
-The example script first creates a *Pof* object which stores a couple of *Family* objects, each representing an example family and its variant pattern of occurrence rule.
-Next it calls the *Pof* object’s *get_family_pass_name_l* method with the argument *genotypes_s*, which is a Pandas Series containing sample genotypes for a particular variant.
-The method returns a list of families whose pattern of occurrence rule is passed by this variant.
+The example script *2_example_pof.py* provides an illustrative example.
+It first creates a couple of *Family* objects to represent 2 families and their variant pattern of occurrence rule.
 
 .. code-block:: python
-
+   
    import pandas as pd
    from seqfam.pof import Family,Pof
 
-   #Create some example families.    
-   family_1 = Family("1","A3N2",["1_1","1_2","1_3"],["1_4","1_5"],A_n_min=3,N_n_min=2,AN_p_diff_min=0.5)
-   family_1.log_info()
-   family_2 = Family("2","A4N1",["2_10","2_11","2_12","2_13","2_14"],["2_15"],A_n_min=4,N_n_min=1,A_p_min=1.0)
-   family_2.log_info()
+   ...
 
-   #Create some genotypes.
-   variant_genotypes_s = pd.Series(data=["1","1","1","1","0","1","1","1","1","1","1"],
-                                   index=["1_1","1_2","1_3","1_4","1_5","2_10","2_11","2_12","2_13","2_14","2_15"])
+   family_1 = Family("1","A3N2",["1_1","1_2","1_3"],["1_4","1_5"],A_n_min=3,N_n_min=2,AN_carrier_diff=0.5)
+   family_2 = Family("2","A4N1",["2_10","2_11","2_12","2_13","2_14"],["2_15"],A_n_min=4,N_n_min=1,A_carrier_p=1.0)
 
-   #Create a Pof object and check whether this variant passes in the example families.
+Family 1 is specified as having 3 affected and 2 unaffected members, and its pattern of occurrence rule requires *AN_carrier_diff* to be 0.5.
+Family 2 has 4 affecteds and 1 unaffected, and a rule requiring all the affecteds to be carriers.
+The rule in both families requires all members to be genotyped (see the *A_n_min* and *N_n_min* parameters).
+
+The script next makes the genotypes for a hypothetical variant in a Pandas Series called *variant_genotypes_s*.
+Finally, it creates a *Pof* object from the 2 *Family* objects, and then calls the *get_family_pass_name_l* method to obtain a list of the families whose pattern of occurrence rule is passed by this variant.
+
+.. code-block:: python
+
    family_l = [family_1,family_2]
    pof = Pof(family_l)
    family_pass_l = pof.get_family_pass_name_l(variant_genotypes_s)
@@ -269,26 +255,15 @@ The *relatedness.py* module can then map each kinship coefficient to a degree of
 KING is often already part of NGS analysis pipelines, so incorporating *relatedness.py* is straightforward.
 Peddy :cite:`Pedersen2017` is an alternative which does not require KING.
 
-As input, the *relatedness.py* module requires pedigree information and a file containing kinship coefficients outputted by KING.
-For each sample pair, the module will map the pedigree information and kinship coefficient to an expected and observed degree of relationship respectively.
-The mapping from kinship coefficient to relationship is as specified in KING documentation: > 0.354 for duplicate samples/monozygotic twins, 0.177–0.354 for 1st degree relatives, 0.0884–0.177 for 2nd degree relatives, 0.0442–0.0884 for 3rd degree relatives, and < 0.0442 for unrelated.
-The user can change this mapping if they wish.
-
-The input files for *4_example_relatedness.py* are cohort.tsv (as used in gene dropping), and data/relatedness/king.kinship.ibs which was outputted by KING and contains kinship coefficients for within-family sample pairs.
-The example script first creates a Relatedness object which stores the paths to these files, then calls the object’s find_duplicates and get_exp_obs_df methods.
-The former returns any within-family sample duplicates, and the latter returns a Pandas DataFrame containing the expected and observed degree of relationship for each within-family sample pair.
-Finally, the script prints the sample pairs which have a different expected and observed degree of relationship.
+As input, the *relatedness.py* module requires a pedigree information file and a kinship coefficients file from KING, either containing within or between-family sample pairs.
+The example script *4_example_relatedness.py* uses data/cohort.tsv for the former and data/relatedness/king.kinship.ibs (within-family sample pairs) for the latter.
+It creates a Relatedness object with these paths, and then calls the object's find_duplicates and get_exp_obs_df methods.
 
 .. code-block:: python
-
-   import os
+   
    from seqfam.relatedness import Relatedness
    import pandas as pd
-
-   #Create the relatedness object.
-   data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","data"))
-   wf_file = os.path.join(data_dir,"relatedness",".".join(["king","kinship","ibs"]))
-   cohort_tsv = os.path.join(data_dir,"cohort.tsv")
+   ...
    relatedness = Relatedness(wf_file=wf_file,cohort_tsv=cohort_tsv,bf_file=None)
 
    #Within-family duplicates.
@@ -300,7 +275,28 @@ Finally, the script prints the sample pairs which have a different expected and 
 
    #Expected versus observed within-family relationships.
    exp_obs_df = relatedness.get_exp_obs_df()
-   print(exp_obs_df.ix[(exp_obs_df["EXP_REL"]!=exp_obs_df["OBS_REL"]) & (pd.notnull(exp_obs_df["Kinship"])),:])
+
+The find_duplicates method returns a list of any duplicate samples, and the get_exp_obs_df method returns a Pandas DataFrame containing the expected and observed degree of relationship for each within-family sample pair.
+
+>>> print(wf_duplicate_l)
+['171b_1448,171b_1449']
+>>> print(exp_obs_df)
+                 EXP_REL  Kinship OBS_REL
+FAMILY ID1  ID2                          
+1      44   47         1   0.2584       1
+2      6    20         4   0.0390       4
+            21         4   0.0688       3
+       20   21         4   0.0051       4
+3      501  838        1   0.2052       1
+            844        2   0.1081       2
+       838  844        1   0.2572       1
+...
+
+The user can modify the mapping from kinship coefficient to relationship degree, but by default it is as specified in KING documentation: > 0.354 for duplicate samples/monozygotic twins, 0.177–0.354 for 1st degree relatives, 0.0884–0.177 for 2nd degree relatives, 0.0442–0.0884 for 3rd degree relatives, and < 0.0442 for unrelated. The final line of the script prints the sample pairs which have a different expected and observed degree of relationship.
+
+.. code-block:: python
+   
+   print(exp_obs_df.loc[(exp_obs_df["EXP_REL"]!=exp_obs_df["OBS_REL"]) & (pd.notnull(exp_obs_df["Kinship"])),:])
 
 sge
 ===
