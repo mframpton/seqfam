@@ -103,7 +103,7 @@ It first creates a :py:obj:`gene_drop.Cohort` object from :file:`cohort.fam` whi
    cohort = Cohort(cohort_fam)
 
 For a hypothetical variant of interest, the script then specifies (i) allele frequency in the general population (*pop_af*) is 0.025; (ii) the subset of samples which have genotypes (*sample_genotyped_l*).
-Now the gene dropping can be performed via the :py:object:`gene_drop.Cohort` object's :py:func:`gene_drop.Cohort.gene_drop` method.
+Now the gene dropping can be performed via the :py:obj:`gene_drop.Cohort` object's :py:func:`gene_drop.Cohort.gene_drop` method.
 The script uses the method to assess whether increasing cohort allele frequencies (*cohort_af*) indicate enrichment relative to the general population.
 For each *cohort_af*, the method returns an enrichment p-value (*p*), and so as *cohort_af* increases, *p* decreases.
 
