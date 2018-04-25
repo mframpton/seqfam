@@ -59,7 +59,7 @@ Figure 1 provides a visual representation of modules 1–4.
     For input, this takes pedigree information and kinship coefficients from KING for each within-family sample pair.
     It maps these data to expected and observed degrees of relationship respectively, returning a data frame.
 
-The repository contains additional scripts in :file:`src/examples` which demonstrate the functionality of the modules on example data, including files in the data directory.
+The repository contains additional scripts in :file:`src/examples` which demonstrate the functionality of the modules on example data, including files in the :file:`data` directory.
 The scripts are :file:`1_example_gene_drop.py`, :file:`2_example_pof.py`, :file:`3_example_gene_burden.py`, :file:`4_example_relatedness.py`, and :file:`5_example_sge.py`.
 The reader can also refer to Table 1 for a summary of the main user functions of the 5 seqfam modules, which includes their input/output.
 Data in the example data files are derived from the whole exome sequencing of a large cohort of over 200 families with inflammatory bowel disease.
@@ -199,7 +199,7 @@ These data frames are indexed by variant ID and covariate name respectively.
    #Read the covariates into a DataFrame.
    covar_df = None if covariates_path == None else pd.read_csv(covariates_path, index_col=0)
 
-Having created a :py:obj:`gene_burden.CMC` object, the script calls its :py:func:`gene_burden.CMC.assign_vars_to_pop_frq_cats` method in order to map the variants to the desired population allele frequency ranges.
+Having created a :py:obj:`gene_burden.CMC` object, the script calls its :py:func:`gene_burden.CMC.assign_variants_to_pop_frq_cats` method in order to map the variants to the desired population allele frequency ranges.
 Multiple population allele frequency columns (databases) are used here, ordered by descending preference.
 The mapping is stored in a new column in the genotypes data frame called "pop_frq_cat".
 
