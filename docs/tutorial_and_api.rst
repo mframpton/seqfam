@@ -85,50 +85,44 @@ Data in the example data files are derived from the whole exome sequencing of a 
 gene_drop
 =========
 
-For a rare variant to be considered potentially causal of a particular trait/disease based on in silico analysis, it must satisfy various criteria, such as being biologically plausible and predicted to be pathogenic.
-The user can run analyses with the *gene_drop.py* and *pof.py* modules to acquire additional evidence.
-Given the structure of the families, Monte Carlo gene dropping can assess whether a variant is enriched in the cohort relative to the general population, and assuming the trait/disease is more prevalent in the cohort, such enrichment supports causality.
-The user can use the *pof.py* module to identify variants which are carried by most or all affected members of a family, or even which segregate between affected and unaffected members.
-The authors are unaware of existing software packages for performing these analyses in familial cohorts, so *gene_drop.py* and *pof.py* fulfil this need.
+For a rare variant to be considered potentially causal of a particular trait/disease based on in silico analysis, it should satisfy various criteria, such as being biologically plausible and predicted to be pathogenic.
+The *gene_drop.py* module can be used to further assess candidate variants via Monte Carlo gene dropping.
+
+Given the structure of the families, Monte Carlo gene dropping can indicate whether a variant is enriched in the cohort relative to the general population, and assuming the trait/disease is more prevalent in the cohort, such enrichment supports causality.
 The *gene_drop.py* module can be considered complementary to the *RVsharing* *R* package :cite:`Bureau2014` which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
 
-By default, for each variant of interest, the *gene_drop.py* module performs 10,000 iterations of gene dropping in the familial cohort.
-In each iteration it gene drops in each family once, seeding the founder genotypes based on the population allele frequency.
-It then calculates the resulting simulated cohort allele frequency from samples specified by the user i.e. those which were sequenced.
-After completing all iterations of gene dropping, *gene_drop.py* outputs the proportion of iterations in which the true cohort allele frequency is less than or equal to the simulated cohort allele frequency: a low proportion, e.g. < 5%, is evidence of enrichment.
+The module requires a pedigree file in *fam* format as input.
+The example script *1_example_gene_drop.py* shows how to use *gene_drop.py* with the pedigrees in *cohort.fam*.
+It first creates a *Cohort* object from *cohort.fam* which stores all of the pedigrees as trees.
 
-The module gene drops in a family in the following way.
-First, it assigns a genotype (number of copies of the mutant allele) to each founder using a Binomial distribution where the number of trials is 2 and the probability of success in each trial is the population allele frequency.
+.. code-block:: python
+
+   from seqfam.gene_drop import Cohort
+   ...
+   cohort_fam = os.path.join(data_dir,"cohort.fam")
+   cohort = Cohort(cohort_fam)
+
+For a hypothetical variant of interest, the script then specifies (i) allele frequency in the general population (*pop_af*) is 0.025; (ii) the subset of samples which have genotypes (*sample_genotyped_l*).
+Now the gene dropping can be performed via the cohort object's *gene_drop* method.
+The script uses the method to assess whether increasing cohort allele frequencies (*cohort_af*) indicate enrichment relative to the general population.
+For each *cohort_af*, the method returns an enrichment p-value (*p*), and so as *cohort_af* increases, *p* decreases.
+
+.. code-block:: python
+   
+   pop_af = 0.025
+   for cohort_af in [0.025,0.03,0.035,0.04]:
+          p = cohort.gene_drop(pop_af, cohort_af, sample_genotyped_l, 1000)
+
+The method gene drops in a family in the following way.
+First, it assigns a genotype (number of copies of the mutant allele) to each founder using a Binomial distribution where the number of trials is 2 and the probability of success in each trial is *pop_af*.
 Hence the founders are assumed to be unrelated.
 It then performs a depth-first traversal starting from each founder (1 per spousal pair), and for heterozygotes, uses a random number generator to determine which parental allele to pass onto the child.
 Thus, every individual in the family is assigned a genotype.
 
-The only input file for *1_example_gene_drop.py* is cohort.tsv, which contains the pedigree information for an example familial cohort.
-This cohort has 3,608 samples from 251 families, and the complexity of the families, calculated as *2n-f* where n and f are the number of non-founders and founders respectively (Abecasis et al., 2002), has median 9 and range 0–103.
-The cohort.csv file is in fam file format (Purcell et al., 2007), meaning it has 1 row per individual and 6 columns for family ID, person ID, father, mother, sex and affection.
-
-The *1_example_gene_drop.py* script first creates a Cohort object from *cohort.tsv*, which stores each family tree, then calls the *gene_drop* method with the following arguments: *pop_af* and *cohort_af* are the allele frequency of a particular variant in the general population and cohort respectively, *sample_genotyped_l* is the list of cohort samples with a genotype, and *gene_drop_n* is the number of iterations of gene dropping to perform.
-Hence the samples in *sample_genotyped_l* are used by the user to calculate *cohort_af*, and by the method to calculate the simulated cohort allele frequencies.
-The method returns a p-value.
-The script calls the gene_drop method with ascending values for *cohort_af*, and so descending p-values are returned.
-
-.. code-block:: python
-       
-   import os
-   from seqfam.gene_drop import Cohort
-
-   #Create cohort object from cohort.tsv file.
-   data_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","data"))
-   cohort_tsv = os.path.join(data_dir,"cohort.tsv")
-   cohort = Cohort(cohort_tsv)
-
-   #Get a list of genotyped individuals.'''
-   cohort_sample_l = cohort.get_all_sample_l()
-   sample_genotyped_l = list(filter(lambda sample: sample.find("p") == -1,cohort_sample_l))
-
-   #Do gene dropping.'''
-   for cohort_af in [0.025,0.03,0.035,0.04]:
-       p = cohort.gene_drop(0.025, cohort_af, sample_genotyped_l, 1000)
+By default, for each variant of interest, the method performs 10,000 iterations of gene dropping in the familial cohort.
+In each iteration it gene drops in each family once and then calculates the resulting simulated cohort allele frequency from the genotyped samples (*sample_genotyped_l*).
+After completing all iterations of gene dropping, the method returns the p-value (*p*), which is the proportion of iterations where *cohort_af* is less than or equal to the simulated cohort allele frequency.
+A low proportion, e.g. < 5%, can be taken as evidence of enrichment.
 
 pof
 ===
