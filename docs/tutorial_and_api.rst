@@ -59,7 +59,7 @@ Figure 1 provides a visual representation of modules 1–4.
     On a single iteration, for each family the algorithm seeds founder genotypes based on the variant population allele frequency (AF) and then gene drops via depth-first traversals.
     Having done this for all families, a simulated cohort AF is calculated and following many iterations (e.g. 10,000), a p-value, the proportion of iterations where cohort AF < simulated cohort AF, is outputted.
     Panel B represents the :py:meth:`Pof.get_family_pass_name_l` method in the :py:mod:`pof` module.
-    Prior to calling the method, each family is assigned a variant pattern of occurrence in family (POF) rule.
+    Prior to calling the method, each family is assigned a variant pattern of occurrence (POF) rule.
     The method then takes a variant’s genotypes and returns families whose POF rule is passed.
     Panel C represents the :py:meth:`CMC.do_multivariate_tests` method in the :py:mod:`gene_burden` module.
     This method takes sample affection status and variant genotypes across multiple genes, plus optionally covariates such as ancestry PCA coordinates.
@@ -160,7 +160,7 @@ It first creates a couple of :py:obj:`pof.Family` objects to represent 2 familie
    family_1 = Family("1","A3N2",["1_1","1_2","1_3"],["1_4","1_5"],A_n_min=3,N_n_min=2,AN_carrier_diff=0.5)
    family_2 = Family("2","A4N1",["2_10","2_11","2_12","2_13","2_14"],["2_15"],A_n_min=4,N_n_min=1,A_carrier_p=1.0)
 
-Family 1 is specified as having 3 *As* and 2 *Ns*, and its pattern of occurrence rule requires *AN_carrier_diff* to be 0.5.
+Family 1 is specified as having 3 *As* and 2 *Ns*, and its POF rule requires *AN_carrier_diff* to be 0.5.
 Family 2 has 4 *As* and 1 *N*, and a rule requiring all the *As* to be carriers.
 The rule in both families requires all members to be genotyped (see the *A_n_min* and *N_n_min* parameters).
 
