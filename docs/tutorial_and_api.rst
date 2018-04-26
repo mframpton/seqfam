@@ -56,14 +56,14 @@ Figure 1 provides a visual representation of modules 1–4.
     :figclass: align-center
 
     Panel A represents the :py:meth:`Cohort.gene_drop` method in the :py:mod:`gene_drop` module which performs Monte Carlo gene dropping.
-    On a single iteration, for each family the algorithm seeds founder genotypes based on the variant population allele frequency and then gene drops via depth-first traversals.
-    Having done this for all families, a simulated cohort allele frequency (AF) is calculated and following many iterations (e.g. 10,000), a p-value, the proportion of iterations where cohort AF < simulated cohort AF, is outputted.
+    On a single iteration, for each family the algorithm seeds founder genotypes based on the variant population allele frequency (AF) and then gene drops via depth-first traversals.
+    Having done this for all families, a simulated cohort AF is calculated and following many iterations (e.g. 10,000), a p-value, the proportion of iterations where cohort AF < simulated cohort AF, is outputted.
     Panel B represents the :py:meth:`Pof.get_family_pass_name_l` method in the :py:mod:`pof` module.
     Prior to calling the method, each family is assigned a variant pattern of occurrence in family (POF) rule.
     The method then takes a variant’s genotypes and returns families whose POF rule is passed.
     Panel C represents the :py:meth:`CMC.do_multivariate_tests` method in the :py:mod:`gene_burden` module.
     This method takes sample affection status and variant genotypes across multiple genes, plus optionally covariates such as ancestry PCA coordinates.
-    For each gene, the method aggregates the variants by allele frequency, constructs null and alternative hypothesis logit models which may include the covariates, and then performs a log-likelihood ratio test.
+    For each gene, the method aggregates the variants by AF, constructs *h0* and *h1* logit models which may include the covariates, and then performs a log-likelihood ratio test.
     Panel D represents the :py:meth:`Relatedness.get_exp_obs_df` method in the :py:mod:`relatedness` module.
     For input, this takes pedigree information and kinship coefficients from `KING <http://people.virginia.edu/~wc9c/KING/>`_ for each within-family sample pair.
     It maps these data to expected and observed degrees of relationship respectively, returning a :py:mod:`DataFrame`.
@@ -143,12 +143,12 @@ pof
 Like :py:mod:`gene_drop`, the :py:mod:`pof` module can provide additional evidence for whether particular rare variants are causal of a particular trait/disease.
 It is intended for identifying variants which are carried by most or all affected members of a family (*As*), or even which segregate between *As* and unaffected members (*Ns*).
 
-For each family, the user uses the :py:mod:`pof` module to define a variant pattern of occurrence rule and check whether any supplied variants pass.
+For each family, the user uses the :py:mod:`pof` module to define a variant pattern of occurrence (POF) rule and check whether any supplied variants pass.
 The rule can specify a minimum value for the proportion *As* who are carriers (*A_carrier_p*), and/or a minimum difference between the proportion of *As* and *Ns* who are carriers (*AN_carrier_diff*).
 Constraints for the number of genotyped *As* and *Ns* can also be added, (*A_n_min* and *N_n_min* respectively).
 
 The example script :file:`2_example_pof.py` provides an illustrative example.
-It first creates a couple of :py:obj:`pof.Family` objects to represent 2 families and their variant pattern of occurrence rule.
+It first creates a couple of :py:obj:`pof.Family` objects to represent 2 families and their POF rule.
 
 .. code-block:: python
    
@@ -165,7 +165,7 @@ Family 2 has 4 *As* and 1 *N*, and a rule requiring all the *As* to be carriers.
 The rule in both families requires all members to be genotyped (see the *A_n_min* and *N_n_min* parameters).
 
 The script next makes the genotypes for a hypothetical variant in a Pandas :py:mod:`Series` called *variant_genotypes_s*.
-Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` objects, and then calls the :py:meth:`pof.Pof.get_family_pass_name_l` method to obtain a list of the families whose pattern of occurrence rule is passed by this variant.
+Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` objects, and then calls the :py:meth:`pof.Pof.get_family_pass_name_l` method to obtain a list of the families whose POF rule is passed by this variant.
 
 .. code-block:: python
 
