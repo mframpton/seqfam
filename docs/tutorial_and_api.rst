@@ -6,14 +6,16 @@ Introduction
 ############
 
 The :py:mod:`seqfam` package is primarily designed for analysing next generation sequencing (NGS) DNA data from families with known pedigree information in order to identify rare variants that are potentially causal of a disease/trait of interest.
-It uses the popular and versatile Pandas library, and can be straightforwardly integrated into existing analysis code/pipelines.
+It uses the popular and versatile `Pandas <https://pandas.pydata.org/>`_ library, and can be straightforwardly integrated into existing analysis code/pipelines.
 :py:mod:`Seqfam` can be used to verify pedigree information, to perform Monte Carlo gene dropping, to undertake regression-based gene burden testing, and to identify variants which segregate by affection status in families via user-defined pattern of occurrence rules.
 Additionally, it can generate scripts for running analyses in a *MapReduce pattern* on a computer cluster, something which is usually desirable in NGS data analysis and indeed *big data* analysis in general.
 
 Requirements and installation
 #############################
 
-:py:mod:`Seqfam` is compatible with Windows, Mac OX X and Linux operating systems. It is coded using Python 3.6 but can also be run by Python 2.7. It requires the following packages:
+:py:mod:`Seqfam` is compatible with Windows, Mac OX X and Linux operating systems.
+It is coded using Python 3.6 but can also be run by Python 2.7.
+It requires the following packages (listed in *requirements.txt*):
 
 * pandas==0.20.3
 * scipy==0.19.1
@@ -22,22 +24,29 @@ Requirements and installation
 * setuptools==38.4.0
 * statsmodels==0.8.0
 
-Having cloned the repository, run the command :code:`python setup.py install`.
+Run the following commands to clone and install from GitHub.
+
+.. code-block:: bash
+   
+   $ git clone https://github.com/mframpton/seqfam
+   $ cd seqfam
+   $ pip install -r requirements.txt
+   $ python setup.py install
 
 Tutorial
 ########
 
 This section describes the functionality and methods employed by :py:mod:`seqfam’s` 5 modules, which are:
 
-    1. :file:`gene_drop.py`: Monte Carlo gene dropping;
+    1. :py:mod:`gene_drop`: Monte Carlo gene dropping;
 
-    2. :file:`pof.py`: variant pattern of occurrence in families;
+    2. :py:mod:`pof`: variant pattern of occurrence in families;
 
-    3. :file:`gene_burden.py`: regression-based gene burden testing;
+    3. :py:mod:`gene_burden`: regression-based gene burden testing;
 
-    4. :file:`relatedness.py`: identification of duplicates and verification of ascertained pedigree information via kinship coefficients;
+    4. :py:mod:`relatedness`: identification of duplicates and verification of ascertained pedigree information via kinship coefficients;
 
-    5. :file:`sge.py`: Sun Grid Engine (SGE) array job creation.
+    5. :py:mod:`sge`: Sun Grid Engine (SGE) array job creation.
 
 Figure 1 provides a visual representation of modules 1–4.
 
@@ -46,22 +55,22 @@ Figure 1 provides a visual representation of modules 1–4.
     :alt: alternate text
     :figclass: align-center
 
-    Panel A represents the :py:meth:`Cohort.gene_drop` method in the :file:`gene_drop.py` module which performs Monte Carlo gene dropping.
+    Panel A represents the :py:meth:`Cohort.gene_drop` method in the :py:mod:`gene_drop` module which performs Monte Carlo gene dropping.
     On a single iteration, for each family the algorithm seeds founder genotypes based on the variant population allele frequency and then gene drops via depth-first traversals.
     Having done this for all families, a simulated cohort allele frequency (AF) is calculated and following many iterations (e.g. 10,000), a p-value, the proportion of iterations where cohort AF < simulated cohort AF, is outputted.
-    Panel B represents the :py:meth:`Pof.get_family_pass_name_l` method in the :file:`pof.py` module.
+    Panel B represents the :py:meth:`Pof.get_family_pass_name_l` method in the :py:mod:`pof` module.
     Prior to calling the method, each family is assigned a variant pattern of occurrence in family (POF) rule.
     The method then takes a variant’s genotypes and returns families whose POF rule is passed.
-    Panel C represents the :py:meth:`CMC.do_multivariate_tests` method in the :file:`gene_burden.py` module.
+    Panel C represents the :py:meth:`CMC.do_multivariate_tests` method in the :py:mod:`gene_burden` module.
     This method takes sample affection status and variant genotypes across multiple genes, plus optionally covariates such as ancestry PCA coordinates.
     For each gene, the method aggregates the variants by allele frequency, constructs null and alternative hypothesis logit models which may include the covariates, and then performs a log-likelihood ratio test.
-    Panel D represents the :py:meth:`Relatedness.get_exp_obs_df` method in the :file:`relatedness.py` module.
+    Panel D represents the :py:meth:`Relatedness.get_exp_obs_df` method in the :py:mod:`relatedness` module.
     For input, this takes pedigree information and kinship coefficients from `KING <http://people.virginia.edu/~wc9c/KING/>`_ for each within-family sample pair.
     It maps these data to expected and observed degrees of relationship respectively, returning a :py:mod:`DataFrame`.
 
 The repository contains additional scripts in :file:`src/examples` which demonstrate the functionality of the modules on example data, including files in the :file:`data` directory.
 The scripts are :file:`1_example_gene_drop.py`, :file:`2_example_pof.py`, :file:`3_example_gene_burden.py`, :file:`4_example_relatedness.py`, and :file:`5_example_sge.py`.
-The reader can also refer to Table 1 for a summary of the main user functions of the 5 :py:mod:`seqfam` modules, which includes their input/output.
+The reader can also refer to Table 1 for a summary of the main user functions of the 5 :py:mod:`seqfam` modules.
 Data in the example data files are derived from the whole exome sequencing of a large cohort of over 200 families with inflammatory bowel disease.
 
 .. table:: Table 1. Summary of main user functions in :py:mod:`seqfam` modules
@@ -86,13 +95,13 @@ gene_drop
 =========
 
 For a rare variant to be considered potentially causal of a particular trait/disease based on in silico analysis, it should satisfy various criteria, such as being biologically plausible and predicted to be pathogenic.
-The :file:`gene_drop.py` module can be used to further assess candidate variants via Monte Carlo gene dropping.
+The :py:mod:`gene_drop` module can be used to further assess candidate variants via Monte Carlo gene dropping.
 
 Given the structure of the families, Monte Carlo gene dropping can indicate whether a variant is enriched in the cohort relative to the general population, and assuming the trait/disease is more prevalent in the cohort, such enrichment supports causality.
-The :file:`gene_drop.py` module can be considered complementary to the *RVsharing* *R* package :cite:`Bureau2014` which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
+The :py:mod:`gene_drop` module can be considered complementary to the `RVsharing <https://cran.r-project.org/web/packages/RVsharing/index.html>`_ *R* package :cite:`Bureau2014` which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
 
 The module requires a pedigree file in `fam format <https://www.cog-genomics.org/plink2/formats#fam>`_ as input.
-The example script :file:`1_example_gene_drop.py` shows how to use :file:`gene_drop.py` with the pedigrees in :file:`cohort.fam`.
+The example script :file:`1_example_gene_drop.py` shows how to use :py:mod:`gene_drop` with the pedigrees in :file:`data/cohort.fam`.
 It first creates a :py:obj:`gene_drop.Cohort` object from :file:`cohort.fam` which stores all of the pedigrees as trees.
 
 .. code-block:: python
@@ -102,8 +111,12 @@ It first creates a :py:obj:`gene_drop.Cohort` object from :file:`cohort.fam` whi
    cohort_fam = os.path.join(data_dir,"cohort.fam")
    cohort = Cohort(cohort_fam)
 
-For a hypothetical variant of interest, the script then specifies (i) allele frequency in the general population (*pop_af*) is 0.025; (ii) the subset of samples which have genotypes (*sample_genotyped_l*).
-Now the gene dropping can be performed via the :py:obj:`gene_drop.Cohort` object's :py:func:`gene_drop.Cohort.gene_drop` method.
+For a hypothetical variant of interest, the script then specifies:
+
+1. allele frequency in the general population (*pop_af*) is 0.025;
+2. the subset of samples which have genotypes (*sample_genotyped_l*).
+
+Now the gene dropping can be performed via the :py:meth:`gene_drop.Cohort.gene_drop` method.
 The script uses the method to assess whether increasing cohort allele frequencies (*cohort_af*) indicate enrichment relative to the general population.
 For each *cohort_af*, the method returns an enrichment p-value (*p*), and so as *cohort_af* increases, *p* decreases.
 
@@ -127,9 +140,12 @@ A low proportion, e.g. < 5%, can be taken as evidence of enrichment.
 pof
 ===
 
-Like :file:`gene_drop.py`, the :file:`pof.py` module can provide additional evidence for whether particular rare variants are causal of a particular trait/disease. It is intended for identifying variants which are carried by most or all affected members of a family, or even which segregate between affected and unaffected members.
+Like :py:mod:`gene_drop`, the :py:mod:`pof` module can provide additional evidence for whether particular rare variants are causal of a particular trait/disease.
+It is intended for identifying variants which are carried by most or all affected members of a family (*As*), or even which segregate between *As* and unaffected members (*Ns*).
 
-For each family, the user uses the :file:`pof.py` module to define a variant pattern of occurrence rule and check whether any supplied variants pass. The rule can specify a minimum value for the proportion of affected members (*As*) who are carriers (*A_carrier_p*), and/or a minimum difference between the proportion of *As* and unaffected members (*Ns*) who are carriers (*AN_carrier_diff*). Constraints for the number of genotyped *As* and *Ns* can also be added, (*A_n_min* and *N_n_min* respectively).
+For each family, the user uses the :py:mod:`pof` module to define a variant pattern of occurrence rule and check whether any supplied variants pass.
+The rule can specify a minimum value for the proportion *As* who are carriers (*A_carrier_p*), and/or a minimum difference between the proportion of *As* and *Ns* who are carriers (*AN_carrier_diff*).
+Constraints for the number of genotyped *As* and *Ns* can also be added, (*A_n_min* and *N_n_min* respectively).
 
 The example script :file:`2_example_pof.py` provides an illustrative example.
 It first creates a couple of :py:obj:`pof.Family` objects to represent 2 families and their variant pattern of occurrence rule.
@@ -144,12 +160,12 @@ It first creates a couple of :py:obj:`pof.Family` objects to represent 2 familie
    family_1 = Family("1","A3N2",["1_1","1_2","1_3"],["1_4","1_5"],A_n_min=3,N_n_min=2,AN_carrier_diff=0.5)
    family_2 = Family("2","A4N1",["2_10","2_11","2_12","2_13","2_14"],["2_15"],A_n_min=4,N_n_min=1,A_carrier_p=1.0)
 
-Family 1 is specified as having 3 affected and 2 unaffected members, and its pattern of occurrence rule requires *AN_carrier_diff* to be 0.5.
-Family 2 has 4 affecteds and 1 unaffected, and a rule requiring all the affecteds to be carriers.
+Family 1 is specified as having 3 *As* and 2 *Ns*, and its pattern of occurrence rule requires *AN_carrier_diff* to be 0.5.
+Family 2 has 4 *As* and 1 *N*, and a rule requiring all the *As* to be carriers.
 The rule in both families requires all members to be genotyped (see the *A_n_min* and *N_n_min* parameters).
 
 The script next makes the genotypes for a hypothetical variant in a Pandas :py:mod:`Series` called *variant_genotypes_s*.
-Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` objects, and then calls the :py:func:`pof.Pof.get_family_pass_name_l` method to obtain a list of the families whose pattern of occurrence rule is passed by this variant.
+Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` objects, and then calls the :py:meth:`pof.Pof.get_family_pass_name_l` method to obtain a list of the families whose pattern of occurrence rule is passed by this variant.
 
 .. code-block:: python
 
@@ -161,7 +177,7 @@ Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` o
 gene_burden
 ===========
 
-The :file:`gene_burden.py` module implements the Combined Multivariate and Collapsing (CMC) burden test :cite:`Li2008` for detecting rare causal variants, where the multivariate test is a log-likelihood ratio test.
+The :py:mod:`gene_burden.py` module implements the Combined Multivariate and Collapsing (CMC) burden test :cite:`Li2008` for detecting rare causal variants, where the multivariate test is a log-likelihood ratio test.
 The user can supply covariates to control for potential confounders such as divergent ancestry.
 This burden test should be applied to unrelated samples, and hence is of no use for cohorts containing few families.
 However, for cohorts containing a relatively large number of families, a sufficient number of unrelated cases can be extracted and pooled with a separate set of unrelated controls.
@@ -169,7 +185,7 @@ Burden tests aggregate rare variants in a gene or functional unit into a single 
 Sequence kernel association testing (SKAT) :cite:`Wu2011` is another widely-used sub-category of such methods.
 In general, burden testing is more powerful than SKAT when a large proportion of variants are causal and are all deleterious/protective.
 
-The :file:`3_example_gene_burden.py` script shows how to use the :file:`gene_burden.py` module to perform CMC tests which control for covariates.
+The :file:`3_example_gene_burden.py` script shows how to use the :py:mod:`gene_burden` module to perform CMC tests which control for covariates.
 Here, we say that variants are *grouped* by the tested units (gene / other functional unit), and within the groups, they are *aggregated*, usually within population allele frequency (PAF) ranges.
 Aggregation means that within each aggregation category (e.g. PAF < 1%), an individual sample is given the value 1 if it carries any variants, otherwise 0.
 The example script performs 1 CMC test per gene (i.e. it groups variants by gene), where variants are aggregated within 2 PAF ranges: PAF < 1% and 1% <= PAF < 5% (any variants with PAF >= 5% remain unaggregated). 
@@ -206,17 +222,18 @@ These :py:mod:`DataFrames` are indexed by variant ID and covariate name respecti
 
 Having created a :py:obj:`gene_burden.CMC` object, the script calls its :py:func:`gene_burden.CMC.assign_variants_to_pop_frq_cats` method in order to map the variants to the desired PAF range categories.
 Multiple PAF columns (databases) are used here, ordered by descending preference.
-The mapping is stored in a new "pop_frq_cat" column in the genotypes :py:mod:`DataFrame`.
+The mapping is stored in a new *pop_frq_cat* column in the genotypes :py:mod:`DataFrame`.
 
 .. code-block:: python
 
    cmc = CMC()
    geno_df = cmc.assign_variants_to_pop_frq_cats(geno_df, pop_frq_col_l, {"rare":0.01,"mod_rare":0.05})
 
-Finally, the script calls the :py:meth:`gene_burden.CMC.do_multivariate_tests` method to perform the CMC tests, specifying the gene column for grouping the variants, and the new "pop_frq_cat" column for aggregation.
+Finally, the script calls the :py:meth:`gene_burden.CMC.do_multivariate_tests` method to perform the CMC tests, specifying the gene column for grouping the variants, and the new *pop_frq_cat* column for aggregation.
 
 .. code-block:: python
 
+   agg_col = "pop_frq_cat"
    cmc_result_df = cmc.do_multivariate_tests(sample_s, geno_df, group_col=gene_col, agg_col="pop_frq_cat", agg_val_l=["rare","mod_rare"], covar_df=covar_df, results_path=results_path)
 
 For each gene, this method performs a multivariate test, which is a log-likelihood ratio test based on Wilk’s theorem:
@@ -229,23 +246,32 @@ where *ll* is log-likelihood, *h1* is the alternative hypothesis, *h0* is the nu
 Specifically, it is a log-likelihood ratio test on null and alternative hypothesis logit models where the dependent variable is derived from affection status, the variant variables (aggregated and/or unaggregated) are independent variables in the alternative model and the covariates are independent variables in both.
 The logit models are fitted using the Broyden–Fletcher–Goldfarb–Shanno (BFGS) algorithm.
 
-The results are written to a CSV (comma-separated values) file and returned in a :py:mod:`DataFrame`.
-They include the number of variants in each aggregation category, the number of unaggregated variants (“unagg” column), the log-likelihood ratio test p-value with/without covariates (“llr_p” and “llr_cov_p”), and the coefficient/p-value for each aggregated variant variable (“_c” and “_p”).
+The results are written to a CSV (comma-separated values) file (*results_path*) and also returned in a :py:mod:`DataFrame` (*cmc_result_df*).
+They include the number of variants in each aggregation category (*rare*, *mod_rare*), the number of unaggregated variants (*unagg*), the proportion of affecteds and unaffecteds which have value 1 for each variant variable (*rare_aff_p* ... *unagg_unaff_p*), the log-likelihood ratio test p-value with/without covariates (*llr_p* and *llr_cov_p*), and the coefficient/p-value for each aggregated variant variable and covariate in the *h1* logit model (*rare_c*, *rare_p* ... *PC5_c*, *PC5_p*).
 
->>> print(cmc_result_df)
+>>> print(cmc_result_df.head().to_string())
+         rare  mod_rare  unagg  rare_aff_p  rare_unaff_p  mod_rare_aff_p  mod_rare_unaff_p  unagg_aff_p  unagg_unaff_p         llr_p  llr_cov_p     rare_c    rare_p  mod_rare_c  mod_rare_p     PC1_c         PC1_p     PC2_c         PC2_p     PC3_c         PC3_p     PC4_c         PC4_p     PC5_c     PC5_p
+Gene                                                                                                                                                                                                                                                                                                            
+GENE_81    17         4      0    0.083333      0.041667        0.340909          0.090909          NaN            NaN  8.776693e-11   0.000075   0.260649  0.607068    1.317017    0.000041  0.350426  2.719782e-10  0.742543  9.178604e-11 -0.286762  1.989026e-10 -0.933229  2.921982e-26 -0.196124  0.100419
+GENE_10     1         0      0    0.000000      0.003788             NaN               NaN          NaN            NaN           NaN   0.009316 -11.325180  0.825768         NaN         NaN  0.347303  3.341802e-10  0.670772  1.993786e-09 -0.289419  9.064199e-11 -0.978531  2.720945e-28 -0.193831  0.096250
+GENE_16     4         0      0    0.007576      0.034091             NaN               NaN          NaN            NaN           NaN   0.013386  -2.475089  0.014941         NaN         NaN  0.337994  7.855867e-10  0.698458  4.950072e-10 -0.282116  2.037413e-10 -0.972062  6.228652e-28 -0.154929  0.185172
+GENE_59     3         0      0    0.000000      0.011364             NaN               NaN          NaN            NaN           NaN   0.014363 -10.955116  0.897996         NaN         NaN  0.333042  1.325734e-09  0.675311  1.539985e-09 -0.284952  1.417334e-10 -0.961612  3.308430e-28 -0.176737  0.128946
+GENE_15     2         0      0    0.000000      0.007576             NaN               NaN          NaN            NaN           NaN   0.027556 -10.728126  0.894869         NaN         NaN  0.329435  1.331849e-09  0.697045  6.262195e-10 -0.281625  2.635041e-10 -0.956502  6.064632e-28 -0.185669  0.109201
+
+If the user ran the tests without covariates, then the returned results :py:mod:`DataFrame` would not include the *llr_cov_p* and *PC* covariate columns, and the columns *rare_c* ... *mod_rare_p* would correspond to the coefficient/p-value in the *h0* logit model.
 
 relatedness
 ===========
 
 The potential for genetic discovery in DNA sequencing data is reduced when samples are mislabelled.
 Hence, necessary quality control steps include identifying duplicates, and in the case of familial samples, verifying the ascertained familial relationships described in the pedigrees.
-The :file:`relatedness.py` module facilitates these quality control steps and is used in conjunction with `KING <http://people.virginia.edu/~wc9c/KING/>`_ software :cite:`Manichaikul2010`.
+The :py:mod:`relatedness` module facilitates these quality control steps and is used in conjunction with `KING <http://people.virginia.edu/~wc9c/KING/>`_ software :cite:`Manichaikul2010`.
 Given genotypes for relatively common variants, *KING* can efficiently calculate a kinship coefficient for each sample pair.
-The :file:`relatedness.py` module can then map each kinship coefficient to a degree of relationship and check it corresponds with the pedigree.
-*KING* is often already part of NGS analysis pipelines, so incorporating :file:`relatedness.py` is straightforward.
+The :py:mod:`relatedness` module can then map each kinship coefficient to a degree of relationship and check it corresponds with the pedigree.
+*KING* is often already part of NGS analysis pipelines, so incorporating :py:mod:`relatedness` is straightforward.
 `Peddy <https://github.com/brentp/peddy>`_ :cite:`Pedersen2017` is an alternative which does not require *KING*.
 
-As input, the :file:`relatedness.py` module requires a pedigree information file in fam format and a kinship coefficients file from KING, either containing within or between-family sample pairs.
+As input, the :py:mod:`relatedness` module requires a pedigree information file in `fam format <https://www.cog-genomics.org/plink2/formats#fam>`_ and a kinship coefficients file from *KING*, either containing within or between-family sample pairs.
 The example script :file:`4_example_relatedness.py` uses :file:`data/cohort.fam` for the former and :file:`data/relatedness/king.kinship.ibs` (within-family sample pairs) for the latter.
 It creates a :py:obj:`relatedness.Relatedness` object with these paths, and then calls the object's :py:func:`relatedness.Relatedness.find_duplicates` and :py:func:`relatedness.Relatedness.get_exp_obs_df` methods.
 
@@ -292,11 +318,11 @@ The final line of the script prints the sample pairs which have a different expe
 sge
 ===
 
-The :file:`sge.py` module has general utility in analysing NGS data, and indeed any big data on computer clusters.
+The :py:mod:`sge` module has general utility in analysing NGS data, and indeed any big data on computer clusters.
 Many NGS data analyses can be cast as "embarassingly parallel problems" and hence executed more efficiently on a computer cluster via a *MapReduce pattern*: the overall task is decomposed into independent sub-tasks (*map tasks*) which run in parallel, and on their completion, a *reduce action* merges/filters/summarises the results.
 For example, gene burden testing across the whole exome can be decomposed into independent sub-tasks by splitting the exome into sub-units e.g. chromosomes.
 Sun Grid Engine (SGE) is a widely used batch-queueing system, and analyses can be performed in a *MapReduce pattern* on SGE via *array jobs*.
-Given a list of *map tasks* and the *reduce task(s)*, the :file:`sge.py` module can create the scripts for submitting and running an *array job*.
+Given a list of *map tasks* and the *reduce task(s)*, the :py:mod:`sge` module can create the scripts for submitting and running an *array job*.
 
 The script :file:`5_example_sge.py` provides an example. 
 It first makes lists of *map tasks* (*map_task_l*) and *map tasks* to execute (*map_task_exec_l*) via the custom *get_map_task_l* function (see the script), and then a *reduce task* string (*reduce_tasks*).
@@ -312,14 +338,14 @@ While *map_task_l* contains all *map tasks*, *map_task_exec_l* contains the subs
    reduce_tasks = "\n".join(["python 2_merge_results.py","python 3_summarise_results.py"])
 
 Next, the script creates an :py:obj:`sge.SGE` object which stores the directory where job scripts will be written (the variable *script_dir* which here has the value :file:`data/sge`).
-Finally it calls the object's :py:meth:`sge.SGE.make_map_reduce_jobs` method with the following arguments: a job script name prefix (here "test"), *map_task_l*, *map_task_exec_l* and *reduce_tasks*.
+Finally it calls the object's :py:meth:`sge.SGE.make_map_reduce_jobs` method with the following arguments: a job script name prefix (here *test*), *map_task_l*, *map_task_exec_l* and *reduce_tasks*.
 
 .. code-block:: python
    
    sge = SGE(script_dir)
    sge.make_map_reduce_jobs("test", map_task_l, reduce_tasks, map_task_exec_l)
 
-This writes the job scripts, and were they for a real array job (they are not), the user could submit it to the job scheduler by running the master executable submit script :file:`data/sge/submit_map_reduce.sh`.
+This writes the job scripts, and were they for a real array job (they are not), the user could submit it to the job scheduler by running the master executable submit script :file:`submit_map_reduce.sh`.
 The generated file :file:`test.map_task_exec.txt` specifies which map tasks to run (*map_tasks_exec_l*).
 
 References
