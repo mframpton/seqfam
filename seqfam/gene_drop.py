@@ -164,10 +164,10 @@ class FamilyTree(object):
 class Cohort(object):
     '''Represents a cohort of familial individuals as a list of FamilyTree objects.'''
     
-    def __init__(self, cohort_tsv):
+    def __init__(self, cohort_fam):
         self.logger = Logger()
         self.node_generator = NodeGenerator()
-        cohort_df = pd.read_csv(cohort_tsv, sep="\t", dtype=str)
+        cohort_df = pd.read_csv(cohort_fam, sep="\t", dtype=str)
         self.logger.log("Making family tree objects...")
         self.fam_tree_l = cohort_df.groupby("FAMILY").apply(self.make_fam_tree).tolist()
         self.fam_tree_l = natsorted(self.fam_tree_l, key=lambda fam_tree: fam_tree.id)
