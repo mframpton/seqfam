@@ -31,6 +31,4 @@ Example scripts
 
 The repository contains additional scripts in *src/examples* which demonstrate the functionality of the modules on example data, including files in the *data* directory. They are *1_example_gene_drop.py*, *2_example_pof.py*, *3_example_gene_burden.py*, *4_example_relatedness.py*, and *5_example_sge.py*.
 
-If the package is used to generate data for a publication, you must cite the following article:
-
-Matthew Frampton, Elena R. Schiff, Nikolas Pontikos, Anthony W. Segal, Adam P. Levine (2018) Seqfam: a python package for analysis of next generation sequencing DNA data in families. *F1000Research* https://f1000research.com/articles/7-281/v1
+If the package is used to generate data for a publication, then cite `this article <https://f1000research.com/articles/7-281/v1>`_.

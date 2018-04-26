@@ -5,15 +5,15 @@ seqfam
 Introduction
 ############
 
-The *seqfam* package is primarily designed for analysing next generation sequencing (NGS) DNA data from families with known pedigree information in order to identify rare variants that are potentially causal of a disease/trait of interest.
+The :py:mod:`seqfam` package is primarily designed for analysing next generation sequencing (NGS) DNA data from families with known pedigree information in order to identify rare variants that are potentially causal of a disease/trait of interest.
 It uses the popular and versatile Pandas library, and can be straightforwardly integrated into existing analysis code/pipelines.
-*Seqfam* can be used to verify pedigree information, to perform Monte Carlo gene dropping, to undertake regression-based gene burden testing, and to identify variants which segregate by affection status in families via user-defined pattern of occurrence rules.
+:py:mod:`Seqfam` can be used to verify pedigree information, to perform Monte Carlo gene dropping, to undertake regression-based gene burden testing, and to identify variants which segregate by affection status in families via user-defined pattern of occurrence rules.
 Additionally, it can generate scripts for running analyses in a *MapReduce pattern* on a computer cluster, something which is usually desirable in NGS data analysis and indeed *big data* analysis in general.
 
 Requirements and installation
 #############################
 
-*Seqfam* is compatible with Windows, Mac OX X and Linux operating systems. It is coded using Python 3.6 but can also be run by Python 2.7. It requires the following packages:
+:py:mod:`Seqfam` is compatible with Windows, Mac OX X and Linux operating systems. It is coded using Python 3.6 but can also be run by Python 2.7. It requires the following packages:
 
 * pandas==0.20.3
 * scipy==0.19.1
@@ -27,7 +27,7 @@ Having cloned the repository, run the command :code:`python setup.py install`.
 Tutorial
 ########
 
-This section describes the functionality and methods employed by seqfam’s 5 modules, which are:
+This section describes the functionality and methods employed by :py:mod:`seqfam’s` 5 modules, which are:
 
     1. :file:`gene_drop.py`: Monte Carlo gene dropping;
 
@@ -46,41 +46,41 @@ Figure 1 provides a visual representation of modules 1–4.
     :alt: alternate text
     :figclass: align-center
 
-    Panel A represents the Cohort.gene_drop method in the :file:`gene_drop.py` module which performs Monte Carlo gene dropping.
+    Panel A represents the :py:meth:`Cohort.gene_drop` method in the :file:`gene_drop.py` module which performs Monte Carlo gene dropping.
     On a single iteration, for each family the algorithm seeds founder genotypes based on the variant population allele frequency and then gene drops via depth-first traversals.
     Having done this for all families, a simulated cohort allele frequency (AF) is calculated and following many iterations (e.g. 10,000), a p-value, the proportion of iterations where cohort AF < simulated cohort AF, is outputted.
-    Panel B represents the Pof.get_family_pass_name_l method in the :file:`pof.py` module.
+    Panel B represents the :py:meth:`Pof.get_family_pass_name_l` method in the :file:`pof.py` module.
     Prior to calling the method, each family is assigned a variant pattern of occurrence in family (POF) rule.
     The method then takes a variant’s genotypes and returns families whose POF rule is passed.
-    Panel C represents the CMC.do_multivariate_tests method in the :file:`gene_burden.py` module.
+    Panel C represents the :py:meth:`CMC.do_multivariate_tests` method in the :file:`gene_burden.py` module.
     This method takes sample affection status and variant genotypes across multiple genes, plus optionally covariates such as ancestry PCA coordinates.
     For each gene, the method aggregates the variants by allele frequency, constructs null and alternative hypothesis logit models which may include the covariates, and then performs a log-likelihood ratio test.
-    Panel D represents the Relatedness.get_exp_obs_df method in the :file:`relatedness.py` module.
-    For input, this takes pedigree information and kinship coefficients from KING for each within-family sample pair.
-    It maps these data to expected and observed degrees of relationship respectively, returning a data frame.
+    Panel D represents the :py:meth:`Relatedness.get_exp_obs_df` method in the :file:`relatedness.py` module.
+    For input, this takes pedigree information and kinship coefficients from `KING <http://people.virginia.edu/~wc9c/KING/>`_ for each within-family sample pair.
+    It maps these data to expected and observed degrees of relationship respectively, returning a :py:mod:`DataFrame`.
 
 The repository contains additional scripts in :file:`src/examples` which demonstrate the functionality of the modules on example data, including files in the :file:`data` directory.
 The scripts are :file:`1_example_gene_drop.py`, :file:`2_example_pof.py`, :file:`3_example_gene_burden.py`, :file:`4_example_relatedness.py`, and :file:`5_example_sge.py`.
-The reader can also refer to Table 1 for a summary of the main user functions of the 5 seqfam modules, which includes their input/output.
+The reader can also refer to Table 1 for a summary of the main user functions of the 5 :py:mod:`seqfam` modules, which includes their input/output.
 Data in the example data files are derived from the whole exome sequencing of a large cohort of over 200 families with inflammatory bowel disease.
 
-.. table:: Table 1. Summary of main user functions in seqfam modules
+.. table:: Table 1. Summary of main user functions in :py:mod:`seqfam` modules
 
-   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
-   | Module      | Method (Class)                | Description                                                                         | Input                                                                                                        | Output                                                           |
-   +=============+===============================+=====================================================================================+==============================================================================================================+==================================================================+
-   | gene_drop   | gene_drop (Cohort)            | Monte Carlo gene dropping                                                           | Cohort fam file (pedigree info), variant population AF, cohort AF, list of samples genotyped, # interactions | p-value                                                          |
-   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
-   | pof         | get_family_pass_name_l        | Variant POF with respect to affected (& unaffected) members                         | Variant POF rule & genotypes                                                                                 | List of families whose POF rules is passed by variant            |
-   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
-   | gene_burden | do_multivariate_tests (CMC)   | Regression-based gene burden testing                                                | Files containing samples, genotypes & covariates files; output path                                          | Data frame and csv file containing burden test results           |
-   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
-   |             | find_duplicates (Relatedness) | Identify duplicates from kinship coefficient                                        | King file                                                                                                    | List of duplicates                                               |
-   | relatedness +-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
-   |             | get_exp_obs_df (Relatedness)  | Map pedigrees & kinship coefficients to expected & observed degrees of relationship | Cohort fam, KING within-family sample pair kinship coefficient file                                          | Data frame of expected & observed degrees of relationship        |
-   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
-   | sge         | make_map_reduce_jobs (SGE)    | Make computer cluster array job scripts.                                            | Filename prefix, lists of map tasks, map tasks to execute and reduce tasks.                                  | Scripts required to run array job including master submit script |
-   +-------------+-------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | Method                                             | Description                                                                         | Input                                                                                                        | Output                                                           |
+   +====================================================+=====================================================================================+==============================================================================================================+==================================================================+
+   | :py:meth:`gene_drop.Cohort.gene_drop`              | Monte Carlo gene dropping                                                           | Cohort fam file (pedigree info), variant population AF, cohort AF, list of samples genotyped, # interactions | p-value                                                          |
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | :py:meth:`pof.Pof.get_family_pass_name_l`          | Variant POF with respect to affected (& unaffected) members                         | Variant POF rule & genotypes                                                                                 | List of families whose POF rules is passed by variant            |
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | :py:meth:`gene_burden.CMC.do_multivariate_tests`   | Regression-based gene burden testing                                                | Files containing samples, genotypes & covariates files; output path                                          | Data frame and csv file containing burden test results           |
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | :py:meth:`relatedness.Relatedness.find_duplicates` | Identify duplicates from kinship coefficient                                        | KING sample pair kinship coefficient file                                                                    | List of duplicates                                               |
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | :py:meth:`relatedness.Relatedness.get_exp_obs_df`  | Map pedigrees & kinship coefficients to expected & observed degrees of relationship | Cohort fam, KING within-family sample pair kinship coefficient file                                          | Data frame of expected & observed degrees of relationship        |
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+   | :py:meth:`sge.SGE.make_map_reduce_jobs`            | Make computer cluster array job scripts.                                            | Filename prefix, lists of map tasks, map tasks to execute and reduce tasks.                                  | Scripts required to run array job including master submit script |
+   +----------------------------------------------------+-------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
 
 gene_drop
 =========
@@ -91,7 +91,7 @@ The :file:`gene_drop.py` module can be used to further assess candidate variants
 Given the structure of the families, Monte Carlo gene dropping can indicate whether a variant is enriched in the cohort relative to the general population, and assuming the trait/disease is more prevalent in the cohort, such enrichment supports causality.
 The :file:`gene_drop.py` module can be considered complementary to the *RVsharing* *R* package :cite:`Bureau2014` which calculates the probability of multiple affected relatives sharing a rare variant under the assumption of no disease association or linkage.
 
-The module requires a pedigree file in *fam* format as input.
+The module requires a pedigree file in `fam format <https://www.cog-genomics.org/plink2/formats#fam>`_ as input.
 The example script :file:`1_example_gene_drop.py` shows how to use :file:`gene_drop.py` with the pedigrees in :file:`cohort.fam`.
 It first creates a :py:obj:`gene_drop.Cohort` object from :file:`cohort.fam` which stores all of the pedigrees as trees.
 
@@ -148,7 +148,7 @@ Family 1 is specified as having 3 affected and 2 unaffected members, and its pat
 Family 2 has 4 affecteds and 1 unaffected, and a rule requiring all the affecteds to be carriers.
 The rule in both families requires all members to be genotyped (see the *A_n_min* and *N_n_min* parameters).
 
-The script next makes the genotypes for a hypothetical variant in a Pandas Series called *variant_genotypes_s*.
+The script next makes the genotypes for a hypothetical variant in a Pandas :py:mod:`Series` called *variant_genotypes_s*.
 Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` objects, and then calls the :py:func:`pof.Pof.get_family_pass_name_l` method to obtain a list of the families whose pattern of occurrence rule is passed by this variant.
 
 .. code-block:: python
@@ -173,10 +173,10 @@ The :file:`3_example_gene_burden.py` script uses the :file:`gene_burden.py` modu
 The input files are in the :file:`data/gene_burden` directory: :file:`samples.csv`, :file:`genotypes.csv` and optionally :file:`covariates.csv`.
 The :file:`samples.csv` file contains the samples’ ID and affection status where 2 indicates a case and 1 a control, and :file:`genotypes.csv` contains 1 row per variant with columns for the sample genotypes, and for variant grouping and aggregation e.g. gene and population allele frequency.
 A sample’s genotype is the number of alternate alleles which it carries (0-2).
-The :file:`covariates.csv` file contains the covariates to control for, which in this instance are ancestry PCA coordinates.
+The :file:`covariates.csv` file contains the covariates to control for, which in this instance are ancestry Principal Components Analysis (PCA) coordinates.
 
-The script first reads :file:`samples.csv` into a Pandas Series, and :file:`genotypes.csv` and :file:`covariates.csv` into Pandas DataFrames.
-These data frames are indexed by variant ID and covariate name respectively.
+The script first reads :file:`samples.csv` into a Pandas :py:mod:`Series`, and :file:`genotypes.csv` and :file:`covariates.csv` into Pandas :py:mod:`DataFrames`.
+These :py:mod:`DataFrames` are indexed by variant ID and covariate name respectively.
 
 .. code-block:: python
 
@@ -201,7 +201,7 @@ These data frames are indexed by variant ID and covariate name respectively.
 
 Having created a :py:obj:`gene_burden.CMC` object, the script calls its :py:func:`gene_burden.CMC.assign_variants_to_pop_frq_cats` method in order to map the variants to the desired population allele frequency ranges.
 Multiple population allele frequency columns (databases) are used here, ordered by descending preference.
-The mapping is stored in a new column in the genotypes data frame called "pop_frq_cat".
+The mapping is stored in a new column in the genotypes :py:mod:`DataFrame` called "pop_frq_cat".
 
 .. code-block:: python
 
@@ -214,12 +214,12 @@ Finally, the script calls the do_multivariate_tests method to perform the CMC te
 
    cmc_result_df = cmc.do_multivariate_tests(sample_s, geno_df, group_col=gene_col, agg_col="pop_frq_cat", agg_val_l=["rare","mod_rare"], covar_df=covar_df, results_path=results_path)
 
-The results are written to a CSV (comma-separated values) file and returned in a data frame.
+The results are written to a CSV (comma-separated values) file and returned in a :py:mod:`DataFrame`.
 They include the number of variants in each aggregation category, the number of unaggregated variants (“unagg” column), the log-likelihood ratio test p-value with/without covariates (“llr_p” and “llr_cov_p”), and the coefficient/p-value for each aggregated variant variable (“_c” and “_p”).
 
 >>> print(cmc_result_df)
 
-To use the :file:`gene_burden.py` module, the user must first read the various required data into Pandas data frames.
+To use the :file:`gene_burden.py` module, the user must first read the various required data into Pandas :py:mod:`DataFrames`.
 These data include variant annotations by which to group (e.g. gene/functional unit) and aggregate (e.g. population allele frequency), and the genotypes, affection status and covariates for the unrelated samples.
 The user can specify multiple categories in which to aggregate variants (e.g. into population allele frequency ranges of 0–1% and 1–5%), and variants outside these categories (e.g. more common variants) remain unaggregated.
 An aggregated variant category takes the value 0 or 1.
@@ -238,11 +238,11 @@ relatedness
 
 The potential for genetic discovery in DNA sequencing data is reduced when samples are mislabelled.
 Hence, necessary quality control steps include identifying duplicates, and in the case of familial samples, verifying the ascertained familial relationships described in the pedigrees.
-The :file:`relatedness.py` module facilitates these quality control steps and is used in conjunction with KING software :cite:`Manichaikul2010`.
-Given genotypes for relatively common variants, KING can efficiently calculate a kinship coefficient for each sample pair.
+The :file:`relatedness.py` module facilitates these quality control steps and is used in conjunction with `KING <http://people.virginia.edu/~wc9c/KING/>`_ software :cite:`Manichaikul2010`.
+Given genotypes for relatively common variants, *KING* can efficiently calculate a kinship coefficient for each sample pair.
 The :file:`relatedness.py` module can then map each kinship coefficient to a degree of relationship and check it corresponds with the pedigree.
-KING is often already part of NGS analysis pipelines, so incorporating :file:`relatedness.py` is straightforward.
-Peddy :cite:`Pedersen2017` is an alternative which does not require KING.
+*KING* is often already part of NGS analysis pipelines, so incorporating :file:`relatedness.py` is straightforward.
+`Peddy <https://github.com/brentp/peddy>`_ :cite:`Pedersen2017` is an alternative which does not require *KING*.
 
 As input, the :file:`relatedness.py` module requires a pedigree information file in fam format and a kinship coefficients file from KING, either containing within or between-family sample pairs.
 The example script :file:`4_example_relatedness.py` uses :file:`data/cohort.fam` for the former and :file:`data/relatedness/king.kinship.ibs` (within-family sample pairs) for the latter.
@@ -265,7 +265,7 @@ It creates a :py:obj:`relatedness.Relatedness` object with these paths, and then
    #Expected versus observed within-family relationships.
    exp_obs_df = relatedness.get_exp_obs_df()
 
-The :py:meth:`relatedness.Relatedness.find_duplicates` method returns a list of any duplicate samples, and the :py:meth:`relatedness.Relatedness.get_exp_obs_df` method returns a Pandas DataFrame containing the expected and observed degree of relationship for each within-family sample pair.
+The :py:meth:`relatedness.Relatedness.find_duplicates` method returns a list of any duplicate samples, and the :py:meth:`relatedness.Relatedness.get_exp_obs_df` method returns a Pandas :py:mod:`DataFrame` containing the expected and observed degree of relationship for each within-family sample pair.
 
 >>> print(wf_duplicate_l)
 ['171b_1448,171b_1449']
@@ -281,7 +281,8 @@ FAMILY ID1  ID2
        838  844        1   0.2572       1
 ...
 
-The user can modify the mapping from kinship coefficient to relationship degree, but by default it is as specified in KING documentation: > 0.354 for duplicate samples/monozygotic twins, 0.177–0.354 for 1st degree relatives, 0.0884–0.177 for 2nd degree relatives, 0.0442–0.0884 for 3rd degree relatives, and < 0.0442 for unrelated. The final line of the script prints the sample pairs which have a different expected and observed degree of relationship.
+The user can modify the mapping from kinship coefficient to relationship degree, but by default it is as specified in *KING* documentation: > 0.354 for duplicate samples/monozygotic twins, 0.177–0.354 for 1st degree relatives, 0.0884–0.177 for 2nd degree relatives, 0.0442–0.0884 for 3rd degree relatives, and < 0.0442 for unrelated.
+The final line of the script prints the sample pairs which have a different expected and observed degree of relationship.
 
 .. code-block:: python
    
@@ -290,12 +291,15 @@ The user can modify the mapping from kinship coefficient to relationship degree,
 sge
 ===
 
-The :file:`sge.py` module has general utility in analysing NGS data, and indeed any big data on computer clusters. Many NGS data analyses can be cast as "embarassingly parallel problems" and hence executed more efficiently on a computer cluster via a "MapReduce pattern": the overall task is decomposed into independent sub-tasks ("map" tasks) which run in parallel, and on their completion, a "reduce" action merges/filters/summarises the results. For example, gene burden testing across the whole exome can be decomposed into independent sub-tasks by splitting the exome into sub-units e.g. chromosomes. Sun Grid Engine (SGE) is a widely used batch-queueing system, and analyses can be performed in a MapReduce pattern on SGE via array jobs.
-Given a list of map tasks and the reduce task(s), the :file:`sge.py` module can create the scripts for submitting and running an array job.
+The :file:`sge.py` module has general utility in analysing NGS data, and indeed any big data on computer clusters.
+Many NGS data analyses can be cast as "embarassingly parallel problems" and hence executed more efficiently on a computer cluster via a *MapReduce pattern*: the overall task is decomposed into independent sub-tasks (*map tasks*) which run in parallel, and on their completion, a *reduce action* merges/filters/summarises the results.
+For example, gene burden testing across the whole exome can be decomposed into independent sub-tasks by splitting the exome into sub-units e.g. chromosomes.
+Sun Grid Engine (SGE) is a widely used batch-queueing system, and analyses can be performed in a *MapReduce pattern* on SGE via *array jobs*.
+Given a list of *map tasks* and the *reduce task(s)*, the :file:`sge.py` module can create the scripts for submitting and running an *array job*.
 
 The script :file:`5_example_sge.py` provides an example. 
-It first makes lists of map tasks (map_task_l) and map tasks to execute (map_task_exec_l) via the custom get_map_task_l method (see the script), and then a reduce task string (reduce_tasks).
-While map_task_l contains all map tasks, map_task_exec_l contains the subset which have not yet completed successfully and hence need to run.
+It first makes lists of *map tasks* (*map_task_l*) and *map tasks* to execute (*map_task_exec_l*) via the custom *get_map_task_l* function (see the script), and then a *reduce task* string (*reduce_tasks*).
+While *map_task_l* contains all *map tasks*, *map_task_exec_l* contains the subset which have not yet completed successfully and hence need to run.
 
 .. code-block:: python
 
@@ -306,8 +310,8 @@ While map_task_l contains all map tasks, map_task_exec_l contains the subset whi
    [map_task_l, map_task_exec_l] = get_map_task_l(chr_l)
    reduce_tasks = "\n".join(["python 2_merge_results.py","python 3_summarise_results.py"])
 
-Next, the script creates an :py:obj:`sge.SGE` object which stores the directory where job scripts will be written (the variable script_dir which here has the value :file:`data/sge`).
-Finally it calls the object's :py:meth:`sge.SGE.make_map_reduce_jobs` method with the following arguments: a job script name prefix (here "test"), map_task_l, map_task_exec_l and reduce_tasks.
+Next, the script creates an :py:obj:`sge.SGE` object which stores the directory where job scripts will be written (the variable *script_dir* which here has the value :file:`data/sge`).
+Finally it calls the object's :py:meth:`sge.SGE.make_map_reduce_jobs` method with the following arguments: a job script name prefix (here "test"), *map_task_l*, *map_task_exec_l* and *reduce_tasks*.
 
 .. code-block:: python
    
@@ -315,7 +319,7 @@ Finally it calls the object's :py:meth:`sge.SGE.make_map_reduce_jobs` method wit
    sge.make_map_reduce_jobs("test", map_task_l, reduce_tasks, map_task_exec_l)
 
 This writes the job scripts, and were they for a real array job (they are not), the user could submit it to the job scheduler by running the master executable submit script :file:`data/sge/submit_map_reduce.sh`.
-The generated file :file:`test.map_task_exec.txt` specifies which map tasks to run (map_tasks_exec_l).
+The generated file :file:`test.map_task_exec.txt` specifies which map tasks to run (*map_tasks_exec_l*).
 
 References
 ==========
