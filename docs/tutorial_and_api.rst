@@ -161,7 +161,7 @@ Finally, it creates a :py:obj:`pof.Pof` object from the 2 :py:obj:`pof.Family` o
 gene_burden
 ===========
 
-This module implements the Combined Multivariate and Collapsing (CMC) burden test :cite:`Li2008` for detecting rare causal variants, where the multivariate test is a log-likelihood ratio test.
+The :file:`gene_burden.py` module implements the Combined Multivariate and Collapsing (CMC) burden test :cite:`Li2008` for detecting rare causal variants, where the multivariate test is a log-likelihood ratio test.
 The user can supply covariates to control for potential confounders such as divergent ancestry.
 This burden test should be applied to unrelated samples, and hence is of no use for cohorts containing few families.
 However, for cohorts containing a relatively large number of families, a sufficient number of unrelated cases can be extracted and pooled with a separate set of unrelated controls.
@@ -169,10 +169,15 @@ Burden tests aggregate rare variants in a gene or functional unit into a single 
 Sequence kernel association testing (SKAT) :cite:`Wu2011` is another widely-used sub-category of such methods.
 In general, burden testing is more powerful than SKAT when a large proportion of variants are causal and are all deleterious/protective.
 
-The :file:`3_example_gene_burden.py` script uses the :file:`gene_burden.py` module to perform CMC tests on example data: it performs 1 CMC test per gene where variants in the population allele frequency ranges of 0-1% and 1-5% are aggregated, and any variants ≥ 5% remain unaggregated.
-The input files are in the :file:`data/gene_burden` directory: :file:`samples.csv`, :file:`genotypes.csv` and optionally :file:`covariates.csv`.
-The :file:`samples.csv` file contains the samples’ ID and affection status where 2 indicates a case and 1 a control, and :file:`genotypes.csv` contains 1 row per variant with columns for the sample genotypes, and for variant grouping and aggregation e.g. gene and population allele frequency.
-A sample’s genotype is the number of alternate alleles which it carries (0-2).
+The :file:`3_example_gene_burden.py` script shows how to use the :file:`gene_burden.py` module to perform CMC tests which control for covariates.
+Here, we say that variants are *grouped* by the tested units (gene / other functional unit), and within the groups, they are *aggregated*, usually within population allele frequency (PAF) ranges.
+Aggregation means that within each aggregation category (e.g. PAF < 1%), an individual sample is given the value 1 if it carries any variants, otherwise 0.
+The example script performs 1 CMC test per gene (i.e. it groups variants by gene), where variants are aggregated within 2 PAF ranges: PAF < 1% and 1% <= PAF < 5% (any variants with PAF >= 5% remain unaggregated). 
+
+The input files are in the :file:`data/gene_burden` directory: :file:`samples.csv`, :file:`genotypes.csv` and :file:`covariates.csv`.
+The :file:`samples.csv` file contains the samples’ ID and affection status where 2 indicates a case and 1 a control.
+The :file:`genotypes.csv` file can be created by combining genotypes from a `VCF file <http://www.internationalgenome.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-40/>`_ with variant annotations (e.g. from the `Variant Effect Predictor <https://www.ensembl.org/info/docs/tools/vep/index.html>`_).
+It contains 1 row per variant with columns for the sample genotypes (the number of alternate alleles), plus columns for variant grouping and aggregation e.g. gene and PAF.
 The :file:`covariates.csv` file contains the covariates to control for, which in this instance are ancestry Principal Components Analysis (PCA) coordinates.
 
 The script first reads :file:`samples.csv` into a Pandas :py:mod:`Series`, and :file:`genotypes.csv` and :file:`covariates.csv` into Pandas :py:mod:`DataFrames`.
@@ -199,31 +204,22 @@ These :py:mod:`DataFrames` are indexed by variant ID and covariate name respecti
    #Read the covariates into a DataFrame.
    covar_df = None if covariates_path == None else pd.read_csv(covariates_path, index_col=0)
 
-Having created a :py:obj:`gene_burden.CMC` object, the script calls its :py:func:`gene_burden.CMC.assign_variants_to_pop_frq_cats` method in order to map the variants to the desired population allele frequency ranges.
-Multiple population allele frequency columns (databases) are used here, ordered by descending preference.
-The mapping is stored in a new column in the genotypes :py:mod:`DataFrame` called "pop_frq_cat".
+Having created a :py:obj:`gene_burden.CMC` object, the script calls its :py:func:`gene_burden.CMC.assign_variants_to_pop_frq_cats` method in order to map the variants to the desired PAF range categories.
+Multiple PAF columns (databases) are used here, ordered by descending preference.
+The mapping is stored in a new "pop_frq_cat" column in the genotypes :py:mod:`DataFrame`.
 
 .. code-block:: python
 
    cmc = CMC()
    geno_df = cmc.assign_variants_to_pop_frq_cats(geno_df, pop_frq_col_l, {"rare":0.01,"mod_rare":0.05})
 
-Finally, the script calls the do_multivariate_tests method to perform the CMC tests, specifying the gene column for grouping the variants, and the new allele frequency range column for aggregation.
+Finally, the script calls the :py:meth:`gene_burden.CMC.do_multivariate_tests` method to perform the CMC tests, specifying the gene column for grouping the variants, and the new "pop_frq_cat" column for aggregation.
 
 .. code-block:: python
 
    cmc_result_df = cmc.do_multivariate_tests(sample_s, geno_df, group_col=gene_col, agg_col="pop_frq_cat", agg_val_l=["rare","mod_rare"], covar_df=covar_df, results_path=results_path)
 
-The results are written to a CSV (comma-separated values) file and returned in a :py:mod:`DataFrame`.
-They include the number of variants in each aggregation category, the number of unaggregated variants (“unagg” column), the log-likelihood ratio test p-value with/without covariates (“llr_p” and “llr_cov_p”), and the coefficient/p-value for each aggregated variant variable (“_c” and “_p”).
-
->>> print(cmc_result_df)
-
-To use the :file:`gene_burden.py` module, the user must first read the various required data into Pandas :py:mod:`DataFrames`.
-These data include variant annotations by which to group (e.g. gene/functional unit) and aggregate (e.g. population allele frequency), and the genotypes, affection status and covariates for the unrelated samples.
-The user can specify multiple categories in which to aggregate variants (e.g. into population allele frequency ranges of 0–1% and 1–5%), and variants outside these categories (e.g. more common variants) remain unaggregated.
-An aggregated variant category takes the value 0 or 1.
-For each variant group, having aggregated the variants, :file:`gene_burden.py` will perform a multivariate test, which is a log-likelihood ratio test based on Wilk’s theorem:
+For each gene, this method performs a multivariate test, which is a log-likelihood ratio test based on Wilk’s theorem:
 
 .. math::
 
@@ -232,6 +228,11 @@ For each variant group, having aggregated the variants, :file:`gene_burden.py` w
 where *ll* is log-likelihood, *h1* is the alternative hypothesis, *h0* is the null hypothesis and *df* is degrees of freedom.
 Specifically, it is a log-likelihood ratio test on null and alternative hypothesis logit models where the dependent variable is derived from affection status, the variant variables (aggregated and/or unaggregated) are independent variables in the alternative model and the covariates are independent variables in both.
 The logit models are fitted using the Broyden–Fletcher–Goldfarb–Shanno (BFGS) algorithm.
+
+The results are written to a CSV (comma-separated values) file and returned in a :py:mod:`DataFrame`.
+They include the number of variants in each aggregation category, the number of unaggregated variants (“unagg” column), the log-likelihood ratio test p-value with/without covariates (“llr_p” and “llr_cov_p”), and the coefficient/p-value for each aggregated variant variable (“_c” and “_p”).
+
+>>> print(cmc_result_df)
 
 relatedness
 ===========
