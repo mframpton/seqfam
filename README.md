@@ -14,7 +14,14 @@ Requirements
 * setuptools==38.4.0
 * statsmodels==0.8.0
 
-Having cloned the repository, run the command ```python setup.py install```.
+Run the following commands to clone and install from GitHub.
+
+```
+$ git clone https://github.com/mframpton/seqfam
+$ cd seqfam
+$ pip install -r requirements.txt
+$ python setup.py install
+```
 
 Modules
 =======
