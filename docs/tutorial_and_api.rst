@@ -188,7 +188,7 @@ In general, burden testing is more powerful than SKAT when a large proportion of
 The :file:`3_example_gene_burden.py` script shows how to use the :py:mod:`gene_burden` module to perform CMC tests which control for covariates.
 Here, we say that variants are *grouped* by the tested units (gene / other functional unit), and within the groups, they are *aggregated*, usually within population allele frequency (PAF) ranges.
 Aggregation means that within each aggregation category (e.g. PAF < 1%), an individual sample is given the value 1 if it carries any variants, otherwise 0.
-The example script performs 1 CMC test per gene (i.e. it groups variants by gene), where variants are aggregated within 2 PAF ranges: PAF < 1% and 1% <= PAF < 5% (any variants with PAF >= 5% remain unaggregated). 
+The example script performs 1 CMC test per gene (i.e. it groups variants by gene), where variants are aggregated within 2 PAF ranges: PAF :math:`<` 1% and 1% :math:`\leq` PAF :math:`<` 5% (any variants with PAF :math:`\geq` 5% remain unaggregated). 
 
 The input files are in the :file:`data/gene_burden` directory: :file:`samples.csv`, :file:`genotypes.csv` and :file:`covariates.csv`.
 The :file:`samples.csv` file contains the samples’ ID and affection status where 2 indicates a case and 1 a control.
