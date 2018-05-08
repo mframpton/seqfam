@@ -19,29 +19,29 @@ class CMC(object):
         self.geno_df = None
         self.group_col = None
         self.agg_col = None
-        self.agg_val_l = None
+        self.agg_cat_l = None
     
     
-    def do_multivariate_tests(self, sample_s, geno_df, group_col, agg_col, agg_val_l, covar_df=None, results_path=None):
+    def do_multivariate_tests(self, sample_s, geno_df, group_col, agg_col, agg_cat_l, covar_df=None, results_path=None):
         '''Main method for doing multivariate tests.
         
         Args:
             | sample_s (Series): index is the sample names, and values are 1/2 (unaffected/affected).
-            | geno_df (DataFrame): index is the variant ID and columns are (1) gene/functional unit; (2) alternate allele frequency; (3) sample genotypes.
-            | group_col (str): column by which to group variants (1 test per group e.g. gene/functional unit).
-            | agg_col (str): column by which to aggregate variants e.g. allele population frequency.
-            | agg_val_l (list of strs): names of aggregated categories.
+            | geno_df (DataFrame): index is the variant ID and columns must include (1) group_col (see below); (2) agg_col (see below); (3) sample genotypes (# copies of alternate allele 0-2).
+            | group_col (str): column in geno_df identifying the groups of variants to be tested for association with the phenotype e.g. gene, pathway or any other entity.
+            | agg_col (str): column containing the aggregation categories (e.g. population allele frequency range) - variants in the same group and aggregation category will be aggregated (collapsed into a dichotomous variable 0/1).
+            | agg_cat_l (list of strs): specifies which aggregation categories to present results for (i.e. coefficient and p-value in the alternative hypothesis logit model).
             | covar_df (DataFrame): index is the covariate names and columns are the samples.
             | results_path (str): path to results file.
         
         Returns:
-            result_df (DataFrame): multivariate test results, where the index is gene/functional unit and columns are (1) # variants in each aggregated (& unaggregated) category; (2) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (4) coefficient & p-value for each independent variable (excluding covariates).
+            result_df (DataFrame): multivariate test results, where the index is the variant group (e.g. gene) and columns are (1) # variants in each aggregated (& unaggregated) category; (2) proportion of (un)affecteds carrying a variant in each aggregated (& unaggregated) category; (3) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (4) coefficient & p-value for each independent variable.
         '''
         
         #Set object attributes.
         self.group_col = group_col
         self.agg_col = agg_col
-        self.agg_val_l = agg_val_l
+        self.agg_cat_l = agg_cat_l
         #Read in samples, genotypes and covariates.
         self.logger.log("Reading in samples and annotated genotypes...")
         self.sample_s = sample_s
@@ -67,7 +67,7 @@ class CMC(object):
         #Merge the results with the collapsed variant counts.
         self.logger.log("Merge the results with the population frequency variant category counts...")
         agg_cat_count_df = self.get_agg_cat_count_df(geno_agg_df)
-        agg_cat_count_df = agg_cat_count_df.join(self.get_agg_cat_count_by_affection(geno_agg_df))
+        agg_cat_count_df = agg_cat_count_df.join(self.get_agg_cat_prop_by_affection(geno_agg_df))
         result_df = agg_cat_count_df.join(result_df)
         if covar_df is None:
             result_df.sort_values(by="llr_p", inplace=True)
@@ -83,7 +83,7 @@ class CMC(object):
         '''Aggregate genotypes within variant population frequency categories.
         
         Args:
-            geno_df (DataFrame): index is the variant ID and columns are (1) gene/functional unit; (2) alternate allele frequency; (3) sample genotypes.
+            geno_df (DataFrame): index is the variant ID and columns must include (1) group_col (see below); (2) agg_col (see below); (3) sample genotypes (# copies of alternate allele 0-2).
             
         Returns:
             geno_agg_df (DataFrame): index is the gene & variant aggregation category, and columns are the # of variants for each sample.
@@ -99,10 +99,10 @@ class CMC(object):
     
     
     def assign_variants_to_pop_frq_cats(self, geno_df, pop_frq_col_l, pop_frq_cat_dict):
-        '''Assign variants to allele population frequency categories.
+        '''Assign variants to allele population frequency range categories.
         
         Args:
-            | geno_df (DataFrame): contains variant identified and population frequencies.
+            | geno_df (DataFrame): index is the variant ID and columns must include the population allele frequency columns listed in the pop_frq_col_l parameter (see below)
             | pop_frq_col_l (list of str): contains the names of the population allele frequency columns in descending order of preference.
             | pop_frq_cat_dict (dict of (str,float)): mapping of frequency category name to exclusive upper bound. 
         
@@ -131,7 +131,7 @@ class CMC(object):
             | covar_df (DataFrame): index is the covariate names and columns are samples.
             
         Returns:
-            test_result_s (Series): multivariate test results for 1 gene/functional unit containing (1) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (2) coefficient & p-value for each independent variable (exc. covariates).
+            test_result_s (Series): multivariate test results for 1 gene/functional unit containing (1) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (2) coefficient & p-value for each independent variable.
         '''
         
         geno_agg_gene_df.index = geno_agg_gene_df.index.droplevel() #Drop the group name so it won't be in the agg cat variable names.
@@ -154,15 +154,16 @@ class CMC(object):
     
     
     def get_coef_pval_l(self, logit_result, covar_b=False):
-        '''Get the coefficients and corresponding p-values of the aggregated independent variables in the logit model.
+        '''Get the coefficients and corresponding p-values of the independent variables in the logit model.
         
         Args:
             | logit_result (statsmodels.discrete.discrete_model.BinaryResultsWrapper): contains results from fitting logit regression model.
+        
         Returns:
             coef_pval_l (list): list of coefficients and corresponding p-values.
         '''
         
-        ind_var_l = self.agg_val_l if covar_b == False else self.agg_val_l + self.covar_df.index.tolist()
+        ind_var_l = self.agg_cat_l if covar_b == False else self.agg_cat_l + self.covar_df.index.tolist()
         coef_l = [(agg_cat+"_c",logit_result.params.loc[agg_cat]) if agg_cat in logit_result.params.index else (agg_cat+"_c",np.NaN) for agg_cat in ind_var_l]
         pval_l = [(agg_cat+"_p",logit_result.pvalues.loc[agg_cat]) if agg_cat in logit_result.pvalues.index else (agg_cat+"_p",np.NaN) for agg_cat in ind_var_l]
         coef_pval_l = [item for sublist in zip(coef_l,pval_l) for item in sublist]
@@ -175,6 +176,7 @@ class CMC(object):
         Args:
             | X_df: the independent variables (covariates and or aggregated genotypes) for 1 gene. 
             | y (numpy.ndarray): values are 0/1 (unaffected/affected). 
+        
         Returns:
             logit_result (statsmodels.discrete.discrete_model.BinaryResultsWrapper): contains results from fitting logit regression model.
         '''
@@ -185,7 +187,7 @@ class CMC(object):
     
     
     def get_agg_cat_count_df(self, geno_agg_df):
-        '''For each gene, get the number of variants in each population frequency category.
+        '''For each group in group_col (e.g. gene), get the number of variants in each variant aggregation category (in agg_col) e.g. population allele frequency range.
         
         Args:
             geno_agg_df (DataFrame): index is the gene & variant aggregation category, and columns are the # of variants for each sample.
@@ -195,20 +197,57 @@ class CMC(object):
         '''
         
         agg_cat_count_df = geno_agg_df['n'].reset_index()
-        agg_cat_count_df[self.agg_col] = agg_cat_count_df[self.agg_col].apply(lambda x: x if x in self.agg_val_l else "unagg")
+        agg_cat_count_df[self.agg_col] = agg_cat_count_df[self.agg_col].apply(lambda x: x if x in self.agg_cat_l else "unagg")
+        
+        def sum_unagg_n(agg_cat_count_df):
+            '''If the user has not listed all of the aggregation categories in the agg_cat_l parameter of the do_multivariate_tests method,
+            then agg_cat_count_df may contain multiple rows per gene for "unagg", and so these must be summed.
+            
+            Args:
+                agg_cat_count_df (DataFrame): contains the group_col, agg_col and a count (n) column.
+                
+            Returns:
+                agg_cat_count_df (DataFrame): contains the group_col, agg_col and a count (n) column.
+            '''
+            
+            unagg_count_df = agg_cat_count_df.loc[agg_cat_count_df["pop_frq_cat"]=="unagg",:].groupby("Gene")["n"].sum().to_frame()
+            unagg_count_df.reset_index(inplace=True)
+            unagg_count_df["pop_frq_cat"] = "unagg"
+            agg_cat_count_df = pd.concat([agg_cat_count_df.loc[agg_cat_count_df["pop_frq_cat"]!="unagg",:],unagg_count_df])
+            return agg_cat_count_df
+        
+        agg_cat_count_df = sum_unagg_n(agg_cat_count_df)
         agg_cat_count_df = pd.pivot_table(data=agg_cat_count_df, values='n', index=self.group_col, columns=self.agg_col)
-        agg_cat_count_df = agg_cat_count_df.reindex(columns=self.agg_val_l+["unagg"])
+        agg_cat_count_df = agg_cat_count_df.reindex(columns=self.agg_cat_l+["unagg"])
         agg_cat_count_df.fillna(0, inplace=True)
         agg_cat_count_df = agg_cat_count_df.apply(pd.to_numeric, downcast='integer', axis=1)
         return agg_cat_count_df
     
     
-    def get_agg_cat_count_by_affection(self, geno_agg_df):
+    def get_agg_cat_prop_by_affection(self, geno_agg_df):
+        '''For each group in group_col (e.g. gene), get the proportion of (un)affecteds who are carriers in each variant aggregation category (in agg_col) e.g. population allele frequency range.
+              
+        Args:
+            geno_agg_df (DataFrame): index is the group_col & aggregation category, and columns are the # of variants for each sample.
+        
+        Returns:
+            agg_cat_prop_df(DataFrame): index is the group_col, and columns indicate the proportion of (un)affected carriers in each variant aggregation category, plus unaggregated variants.
+        '''
         
         geno_agg_df = geno_agg_df.reset_index()
-        geno_agg_df[self.agg_col] = geno_agg_df[self.agg_col].apply(lambda x: x if x in self.agg_val_l else "unagg")
+        geno_agg_df[self.agg_col] = geno_agg_df[self.agg_col].apply(lambda x: x if x in self.agg_cat_l else "unagg")
         
         def get_prop_s(geno_agg_df, sample_l, name):
+            '''
+            Args:
+                | geno_agg_df (DataFrame): index is the group_col & aggregation category, and columns are the # of variants for each sample.
+                | sample_l (list of strs): list of sample names (columns in geno_agg_df).
+                | name (str): name to give to returned Series. 
+            
+            Returns:
+                prop_s (Series): index is the group_col & aggregation category, and values are the proportion of (un)affecteds who are carriers.
+            '''
+            
             prop_s = geno_agg_df.groupby([self.group_col,self.agg_col]).apply(lambda group: group[sample_l].values.mean())
             prop_s.name = name
             return prop_s
@@ -218,14 +257,23 @@ class CMC(object):
         prop_df.reset_index(inplace=True)
 
         def pivot_prop_df(prop_df, affection):
+            '''
+            Args:
+                | prop_df (DataFrame): contains the group_col and agg_col columns, plus columns for the proportion of (un)affected carriers. 
+                | affection (str): affection 
+            
+            Returns:
+                agg_cat_prop_df (DataFrame): index is the group_col, and columns are the proportion of (un)affecteds who are carriers of each variant aggregation category in agg_cat_l, plus unaggregated variants.
+            '''
+            
             agg_cat_prop_df = pd.pivot_table(data=prop_df, values="{0}_p".format(affection), index=self.group_col, columns=self.agg_col)
             column_rename_dict = dict(zip(agg_cat_prop_df.columns.tolist(),["{0}_{1}".format(col,"{0}_p".format(affection)) for col in agg_cat_prop_df.columns.tolist()]))
             agg_cat_prop_df.rename(columns=column_rename_dict, inplace=True)
-            agg_cat_prop_df = agg_cat_prop_df.reindex(columns=["{0}_{1}_p".format(agg_val,affection) for agg_val in self.agg_val_l + ["unagg"]])
+            agg_cat_prop_df = agg_cat_prop_df.reindex(columns=["{0}_{1}_p".format(agg_cat,affection) for agg_cat in self.agg_cat_l + ["unagg"]])
             return agg_cat_prop_df
 
         agg_cat_prop_df = (pivot_prop_df(prop_df,"aff")).merge(pivot_prop_df(prop_df,"unaff"), left_index=True, right_index=True)
-        agg_cat_prop_df = agg_cat_prop_df.reindex(columns=["{0}_{1}_p".format(agg_cat,affection) for agg_cat in self.agg_val_l + ["unagg"] for affection in ["aff","unaff"]])
+        agg_cat_prop_df = agg_cat_prop_df.reindex(columns=["{0}_{1}_p".format(agg_cat,affection) for agg_cat in self.agg_cat_l + ["unagg"] for affection in ["aff","unaff"]])
         
         return agg_cat_prop_df 
     
