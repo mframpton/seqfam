@@ -107,14 +107,14 @@ class Relatedness(object):
         Returns:
             exp_rel_df (DataFrame): contains the expected relationships between the family members.'''
     
-        #print(fam_df.name)        
+        self.logger.log(fam_df.name)        
         fam_df.replace({"0":np.NaN}, inplace=True) #Tidy fam_df
         
         #Get each individual's parents and grandparents.
         fam_uniq_ind_l = pd.unique(fam_df["PERSON"]).tolist()
         fam_uniq_ind_l = list(filter(lambda x: x in fam_ind_seq_dict[fam_df.name], fam_uniq_ind_l)) #Only need relations for samples with kinship coefs.
         relations_df = pd.DataFrame(data={"IND":fam_uniq_ind_l})
-        relations_df[["siblings","parents","grandparents"]] = relations_df["IND"].apply(self.get_relations_df, fam_df=fam_df)
+        relations_df[["siblings","parents","grandparents","ggrandparents"]] = relations_df["IND"].apply(self.get_relations_s, fam_df=fam_df)
         relations_df.set_index("IND", inplace=True)
     
         #Get every pair of individuals and store their expected and observed relationship.
@@ -127,34 +127,28 @@ class Relatedness(object):
         return exp_rel_df
 
 
-    def get_relations_df(self, ind, fam_df):
+    def get_relations_s(self, ind, fam_df):
         '''For 1 individual, get a series containing lists of their siblings, parents and grandparents.
-        
+
         Args:
-            | ind (str): individual ID 
+            | ind (str): individual ID
             | fam_df (DataFrame): contains the pedigree information for a family.
-        
+
         Returns:
-            relations_s (Series): contains lists of the individual's siblings, parents and grandparents.'''
-    
-        #print "IND: {0}".format(ind)
+            relations_s (Series): contains lists of the individual's siblings, parents, grandparents and great-grandparents.'''
+
         father,mother = fam_df.ix[fam_df["PERSON"]==ind,:].iloc[0]["FATHER"],fam_df.ix[fam_df["PERSON"]==ind,:].iloc[0]["MOTHER"]
+        parent_l = list(filter(lambda x: pd.notnull(x), [father,mother]))
         #print "PARENTS: {0},{1}".format(father,mother)
         sibling_l = fam_df.ix[(fam_df["FATHER"]==father) & (fam_df["MOTHER"]==mother) & (fam_df["PERSON"]!=ind),"PERSON"].tolist() if pd.notnull(father) and pd.notnull(mother) else []
         #print "SIBLINGS: {0}".format(",".join(sibling_l))
-        parental_gf = fam_df.ix[fam_df["PERSON"]==father,:].iloc[0]["FATHER"] if pd.notnull(father) else np.NaN
-        #print "PARENTAL GF: {0}".format(parental_gf)
-        parental_gm = fam_df.ix[fam_df["PERSON"]==father,:].iloc[0]["MOTHER"] if pd.notnull(father) else np.NaN
-        #print "PARENTAL GM: {0}".format(parental_gm)
-        maternal_gf = fam_df.ix[fam_df["PERSON"]==mother,:].iloc[0]["FATHER"] if pd.notnull(mother) else np.NaN
-        #print "PARENTAL GF: {0}".format(maternal_gf)
-        maternal_gm = fam_df.ix[fam_df["PERSON"]==mother,:].iloc[0]["MOTHER"] if pd.notnull(mother) else np.NaN
-        #print "PARENTAL GM: {0}".format(maternal_gm)
-        parent_l = list(filter(lambda x: pd.notnull(x), [father,mother]))
-        grandparent_l = list(filter(lambda x: pd.notnull(x), [parental_gf,parental_gm,maternal_gf,maternal_gm]))
-        
-        relations_s = pd.Series([sibling_l,parent_l,grandparent_l],
-                         index=["siblings","parents","grandparents"])
+        grandparent_l = [fam_df.ix[fam_df["PERSON"]==parent,:].iloc[0][grandparent] for parent,grandparent in list(itertools.product(parent_l,["FATHER","MOTHER"]))]
+        grandparent_l = list(filter(lambda x: pd.notnull(x), grandparent_l))
+        ggrandparent_l = [fam_df.ix[fam_df["PERSON"]==grandparent,:].iloc[0][ggrandparent] for grandparent,ggrandparent in list(itertools.product(grandparent_l,["FATHER","MOTHER"]))]
+        ggrandparent_l = list(filter(lambda x: pd.notnull(x), ggrandparent_l))	
+
+        relations_s = pd.Series([sibling_l,parent_l,grandparent_l,ggrandparent_l],
+                         index=["siblings","parents","grandparents","ggrandparents"])
         return relations_s
 
 
@@ -171,7 +165,8 @@ class Relatedness(object):
         ind1_sibling_l, ind2_sibling_l = relations_df.loc[ind1,"siblings"], relations_df.loc[ind2,"siblings"]
         ind1_parent_l, ind2_parent_l = relations_df.loc[ind1,"parents"], relations_df.loc[ind2,"parents"]
         ind1_grandparent_l, ind2_grandparent_l = relations_df.loc[ind1,"grandparents"], relations_df.loc[ind2,"grandparents"]
-    
+        ind1_ggrandparent_l, ind2_ggrandparent_l = relations_df.loc[ind1,"ggrandparents"], relations_df.loc[ind2,"ggrandparents"]   
+ 
         exp_rel = "4" #i.e. at least a 4th-degree relationship.
         if ind2 in ind1_parent_l or ind1 in ind2_parent_l: #Parent-child
             exp_rel = "1"
@@ -183,7 +178,9 @@ class Relatedness(object):
             exp_rel = "2"
         elif len(set(ind1_grandparent_l).intersection(set(ind2_grandparent_l))) > 0: #Cousins
             exp_rel = "3"
-        elif len(set(ind1_grandparent_l).intersection(set(ind2_sibling_l))) > 0 or len(set(ind2_grandparent_l).intersection(set(ind1_sibling_l))) > 0: #Great Uncle/Aunt
+        elif len(set(ind1_grandparent_l).intersection(set(ind2_sibling_l))) > 0 or len(set(ind2_grandparent_l).intersection(set(ind1_sibling_l))) > 0: #Great Uncle/Aunt i.e. sibling of grandparent.
+            exp_rel = "3"
+        elif ind1 in ind2_ggrandparent_l or ind2 in ind1_ggrandparent_l: #Great-grandparent
             exp_rel = "3"
         return exp_rel
     
