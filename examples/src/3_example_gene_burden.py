@@ -11,8 +11,8 @@ covariates_path = os.path.join(data_dir,".".join(["covariates","csv"]))
 results_path = os.path.join(data_dir,".".join(["cmc","results","csv"]))
 
 #Read the samples into a Series.
-sample_s = pd.read_csv(samples_path, dtype=str, index_col="Sample ID")
-sample_s["Affection"] = sample_s["Affection"].astype(int)
+sample_s = pd.read_csv(samples_path, dtype=str, index_col="Sample ID", squeeze=True)
+sample_s = sample_s.astype(int)
 sample_s = sample_s[sample_s != 0]
 
 #Read the variant annotations + genotypes into a DataFrame.

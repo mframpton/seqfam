@@ -45,7 +45,7 @@ class CMC(object):
         #Read in samples, genotypes and covariates.
         self.logger.log("Reading in samples and annotated genotypes...")
         self.sample_s = sample_s
-        self.sample_s["Affection"] = self.sample_s["Affection"].astype(int)
+        self.sample_s = self.sample_s.astype(int)
         self.sample_s = self.sample_s[self.sample_s != 0]
         self.geno_df = geno_df
         geno_df[self.sample_s.index] = geno_df[self.sample_s.index].apply(pd.to_numeric, errors='coerce', downcast='integer', axis=1)
@@ -252,7 +252,7 @@ class CMC(object):
             prop_s.name = name
             return prop_s
         
-        ca_l,co_l = self.sample_s[self.sample_s["Affection"]==2].index.tolist(), self.sample_s[self.sample_s["Affection"]==1].index.tolist()
+        ca_l,co_l = self.sample_s[self.sample_s==2].index.tolist(), self.sample_s[self.sample_s==1].index.tolist()
         prop_df = pd.concat([get_prop_s(geno_agg_df,ca_l,"aff_p"),get_prop_s(geno_agg_df,co_l,"unaff_p")], axis=1)
         prop_df.reset_index(inplace=True)
 
