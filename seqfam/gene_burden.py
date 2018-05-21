@@ -54,6 +54,7 @@ class CMC(object):
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         if geno_df.empty:
+            self.logger.log("Exiting because nothing to test.")
             sys.exit()
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
@@ -68,7 +69,7 @@ class CMC(object):
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         if geno_agg_df.empty:
-            self.logger("Exiting because nothing to test.")
+            self.logger.log("Exiting because nothing to test.")
             sys.exit()
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
