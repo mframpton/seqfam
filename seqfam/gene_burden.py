@@ -55,7 +55,7 @@ class CMC(object):
         self.logger.log("# genes: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         if geno_df.empty:
             self.logger.log("Exiting because nothing to test.")
-            sys.exit()
+            return
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
         geno_agg_df = self.aggregate_by_agg_col(geno_df)
@@ -70,7 +70,7 @@ class CMC(object):
         self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         if geno_agg_df.empty:
             self.logger.log("Exiting because nothing to test.")
-            sys.exit()
+            return
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
         result_df = geno_agg_df[self.sample_s.index].groupby(level=[self.group_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
