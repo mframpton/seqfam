@@ -65,7 +65,7 @@ class CMC(object):
         geno_agg_df = geno_agg_df.loc[~(geno_agg_df[sample_s.index]==0).all(axis=1),:]
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
-        if len(geno_agg_df.index):
+        if geno_agg_df.empty:
             self.logger("Exiting because nothing to test.")
             sys.exit()
         #Do the multivariate tests.
