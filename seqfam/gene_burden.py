@@ -52,15 +52,19 @@ class CMC(object):
         geno_df.loc[:,self.sample_s.index].fillna(0, inplace=True)
         self.covar_df = covar_df
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
-        self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
+        self.logger.log("# genes: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
         geno_agg_df = self.aggregate_by_agg_col(geno_df)
         self.logger.log("Retain groups which have >= 1 non-zero genotype.")
         all_zero_s = geno_agg_df[self.sample_s.index].groupby(level=group_col).apply(lambda df: df.values.sum()==0)
         if all_zero_s.size > 0:
-            self.logger.log("Dropped because they have all zero genotypes: {0}".format(",".join(all_zero_s[all_zero_s==True].index.tolist())))
+            self.logger.log("Dropped groups: {0}".format(",".join(all_zero_s[all_zero_s==True].index.tolist())))
             geno_agg_df = geno_agg_df.ix[all_zero_s[all_zero_s==False].index,:]
+        self.logger.log("Drop variants which have all zero genotypes.")
+        geno_agg_df = geno_agg_df.loc[~(geno_agg_df[sample_s.index]==0).all(axis=1),:]
+        self.logger.log("# variants: {0}".format(len(geno_df.index)))
+        self.logger.log("# genes to test: {0}".format(len(pd.unique(geno_df[self.group_col]))))
         #Do the multivariate tests.
         self.logger.log("Doing multivariate tests...")
         result_df = geno_agg_df[self.sample_s.index].groupby(level=[self.group_col]).apply(self.do_multivariate_test, y=self.sample_s.values-1, covar_df=covar_df)
@@ -134,14 +138,17 @@ class CMC(object):
             test_result_s (Series): multivariate test results for 1 gene/functional unit containing (1) llr_p (and llr_cov_p), the log-likelihood ratio p-value (after controlling for covariates); (2) coefficient & p-value for each independent variable.
         '''
         
+        self.logger.log(geno_agg_gene_df.name)
         geno_agg_gene_df.index = geno_agg_gene_df.index.droplevel() #Drop the group name so it won't be in the agg cat variable names.
         logit_result = self.fit_logit_model(geno_agg_gene_df,y)
         test_result_l = [("llr_p",logit_result.llr_pvalue)]
         coef_pval_l = None
         if covar_df is not None:
             #Model with only covariates
+            self.logger.log("H0 (covariates only)")
             logit_result_h0 = self.fit_logit_model(covar_df,y)
             #Model with covariates plus aggregated variant independent variables
+            self.logger.log("H1 (all independent variables)")
             logit_result_h1 = self.fit_logit_model(pd.concat([covar_df, geno_agg_gene_df]),y)
             llr_cov_p = stats.chisqprob(2*(logit_result_h1.llf - logit_result_h0.llf), logit_result_h1.df_model - logit_result_h0.df_model)
             test_result_l.append(("llr_cov_p",llr_cov_p))
