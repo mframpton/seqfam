@@ -172,7 +172,11 @@ class CMC(object):
         
         ind_var_l = self.agg_cat_l if covar_b == False else self.agg_cat_l + self.covar_df.index.tolist()
         coef_l = [(agg_cat+"_c",logit_result.params.loc[agg_cat]) if agg_cat in logit_result.params.index else (agg_cat+"_c",np.NaN) for agg_cat in ind_var_l]
-        pval_l = [(agg_cat+"_p",logit_result.pvalues.loc[agg_cat]) if agg_cat in logit_result.pvalues.index else (agg_cat+"_p",np.NaN) for agg_cat in ind_var_l]
+        pval_l = [(agg_cat+"_p",np.NaN) for agg_cat in ind_var_l]
+        try:
+            pval_l = [(agg_cat+"_p",logit_result.pvalues.loc[agg_cat]) if agg_cat in logit_result.pvalues.index else (agg_cat+"_p",np.NaN) for agg_cat in ind_var_l]
+        except ValueError:
+            self.logger.log("P-values unavailable.")
         coef_pval_l = [item for sublist in zip(coef_l,pval_l) for item in sublist]
         return coef_pval_l
     
