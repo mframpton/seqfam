@@ -53,6 +53,8 @@ class CMC(object):
         self.covar_df = covar_df
         self.logger.log("# variants: {0}".format(len(geno_df.index)))
         self.logger.log("# genes: {0}".format(len(pd.unique(geno_df[self.group_col]))))
+        if geno_df.empty:
+            sys.exit()
         #Aggregate the genotypes.
         self.logger.log("Aggregating genotypes...")
         geno_agg_df = self.aggregate_by_agg_col(geno_df)
