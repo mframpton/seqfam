@@ -1,5 +1,6 @@
 from natsort import natsorted
 from seqfam.misc import Logger
+import pandas as pd
 
 
 class Family(object):
@@ -50,6 +51,7 @@ class Family(object):
 		if self.A_p_min != None or self.AN_p_diff_min != None:
 			A_geno_count_s = variant_genotypes_s.ix[self.A_l].value_counts(normalize=True, dropna=False)
 			A_p = A_geno_count_s.ix[carrier_call].sum()
+			A_p = 0.0 if pd.isnull(A_p) else A_p
 		if self.A_p_min != None: 
 			if A_p < self.A_p_min:
 				return False
