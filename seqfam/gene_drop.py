@@ -197,6 +197,22 @@ class Cohort(object):
         return all_sample_l
     
     
+    def get_all_family_l(self):
+        '''Get a list of all the families in the cohort.
+        
+        Returns:
+           all_family_l (list): list of IDs of families present in cohort.'''
+    
+        all_family_l = [fam_tree.id for fam_tree in self.fam_tree_l]
+        return all_family_l
+    
+    
+    def remove(self, family_l):
+        '''Remove families from the cohort (self.fam_tree_l).'''
+        
+        self.fam_tree_l = [fam_tree for fam_tree in self.fam_tree_l if fam_tree.id not in family_l]
+    
+    
     def gene_drop(self, pop_af, cohort_af, sample_genotyped_l, gene_drop_n):
         '''Perform gene dropping across the cohort and return the proportion of iterations in which the simulated allele frequency is less than or equal to the cohort frequency.
         
