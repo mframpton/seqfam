@@ -225,6 +225,10 @@ class Cohort(object):
         Returns:
             cohort_enriched_p (float): proportion of iterations in which the simulated allele frequency is less than or equal to the cohort frequency.'''
         
+        if any(pd.isnull([pop_af,cohort_af,sample_genotyped_l,gene_drop_n])):
+            self.logger.log("Cohort.gene_drop input parameter is None.")
+            return np.NaN
+        
         ind_gtyped_grps = groupby(sample_genotyped_l, lambda x: x.split("_")[0])
         fam_ind_gtyped_dict = OrderedDict([(fam,[id.split("_")[1] for id in list(ind_gtyped_grp)]) for fam, ind_gtyped_grp in ind_gtyped_grps])
         self.logger.log("# families with >=1 genotyped sample: {0}".format(len(fam_ind_gtyped_dict)))
