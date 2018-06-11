@@ -6,6 +6,7 @@ from seqfam.misc import Logger
 import sys
 from natsort import natsorted
 from itertools import groupby
+import scipy.stats as st
 
 
 class Node(object):
@@ -247,3 +248,52 @@ class Cohort(object):
         t1 = time.time()
         self.logger.log("Processing time: {0:.2f} secs\n".format(t1-t0))
         return cohort_enriched_p
+    
+    
+    def get_gene_drop_power(self, sample_genotyped_l, af_diff_l, pop_af=0.01, gene_drop_n=1000, alpha=0.05):
+        
+        if any(pd.isnull([pop_af,gene_drop_n])):
+            self.logger.log("Cohort.gene_drop input parameter is None.")
+            return np.NaN
+        
+        ind_gtyped_grps = groupby(sample_genotyped_l, lambda x: x.split("_")[0])
+        fam_ind_gtyped_dict = OrderedDict([(fam,[id.split("_")[1] for id in list(ind_gtyped_grp)]) for fam, ind_gtyped_grp in ind_gtyped_grps])
+        self.logger.log("# families with >=1 genotyped sample: {0}".format(len(fam_ind_gtyped_dict)))
+        self.logger.log("Start gene drop with pop_af={0}, # genotype calls={1} & gene_drop_n={2}.".format(pop_af,len(sample_genotyped_l),gene_drop_n))
+        
+        t0 = time.time()
+        total_allele_count = len(sample_genotyped_l)*2
+        lt_thresh_n = 0
+        gene_drop_af_l = []
+        for n in range(gene_drop_n):
+            carrier_allele_count = sum(fam_tree.gene_drop(pop_af,fam_ind_gtyped_dict[fam_tree.id]) for fam_tree in self.fam_tree_l if fam_tree.id in fam_ind_gtyped_dict)
+            gene_drop_af = carrier_allele_count/float(total_allele_count)
+            gene_drop_af_l.append(gene_drop_af)        
+        cohort_enriched_p = lt_thresh_n/float(gene_drop_n)
+        self.logger.log("p-value={0}".format(cohort_enriched_p))
+        t1 = time.time()
+        self.logger.log("Processing time: {0:.2f} secs\n".format(t1-t0))
+        
+        cohort_af_l = [pop_af + af for af in af_diff_l]
+        
+        def get_power(cohort_af, gene_drop_af_l, alpha):
+            #Get binomial distribution.
+            b_l = [1 if cohort_af > gene_drop_af else 0 for gene_drop_af in gene_drop_af_l]
+            n = len(b_l)
+            p = b_l.count(1)/float(n)
+            q = 1.0-p
+            #Approximate to normal distribution.
+            mu = n*p
+            #print(n,p,q)
+            sigma = (n*p*q)**0.5
+            #print(mu,sigma)
+            #Get power.
+            if sigma == 0:
+                return 1.0
+            z = ((1.0-alpha)*n - mu)/sigma
+            power = 1-st.norm.cdf(z)
+            return(power)
+        
+        power_l = [get_power(cohort_af,gene_drop_af_l,alpha) for cohort_af in cohort_af_l]
+        return power_l
+        
