@@ -250,9 +250,9 @@ class Cohort(object):
         return cohort_enriched_p
     
     
-    def get_gene_drop_power(self, sample_genotyped_l, af_diff_l, pop_af=0.01, gene_drop_n=1000, alpha=0.05):
-        
-        if any(pd.isnull([pop_af,gene_drop_n])):
+    def get_gene_drop_af_l(self, pop_af, sample_genotyped_l, gene_drop_n):
+    
+        if any(pd.isnull([pop_af, gene_drop_n])):
             self.logger.log("Cohort.gene_drop input parameter is None.")
             return np.NaN
         
@@ -273,6 +273,11 @@ class Cohort(object):
         self.logger.log("p-value={0}".format(cohort_enriched_p))
         t1 = time.time()
         self.logger.log("Processing time: {0:.2f} secs\n".format(t1-t0))
+    
+        return gene_drop_af_l
+    
+    
+    def get_gene_drop_power(self, gene_drop_af_l, af_diff_l, pop_af=0.01, alpha=0.05):
         
         cohort_af_l = [pop_af + af for af in af_diff_l]
         
