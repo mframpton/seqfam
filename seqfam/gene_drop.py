@@ -192,9 +192,9 @@ class Cohort(object):
         '''Get a list of all of the samples in the cohort.
         
         Returns:
-            all_sample_l (list): list of sample IDs of the form <FAMILY_ID>_<INDIVIDUAL_ID>.'''
+            all_sample_l (list): list of sample IDs tuples (<FAMILY_ID>,<INDIVIDUAL_ID>).'''
         
-        all_sample_l = ["{0}_{1}".format(fam_tree.id,node.id) for fam_tree in self.fam_tree_l for node in fam_tree.node_l]
+        all_sample_l = [(fam_tree.id,node.id) for fam_tree in self.fam_tree_l for node in fam_tree.node_l]
         return all_sample_l
     
     
@@ -214,6 +214,16 @@ class Cohort(object):
         self.fam_tree_l = [fam_tree for fam_tree in self.fam_tree_l if fam_tree.id not in family_l]
     
     
+    def get_fam_ind_gtyped_dict(self, sample_genotyped_l):
+        
+        sample_genotyped_l.sort(key=lambda sample: sample[0])
+        ind_gtyped_grps = groupby(sample_genotyped_l, lambda sample: sample[0])
+        fam_ind_gtyped_dict = OrderedDict([(fam,[ind[1] for ind in list(ind_gtyped_grp)]) for fam, ind_gtyped_grp in ind_gtyped_grps])
+        self.logger.log("# families with >=1 genotyped sample: {0}".format(len(fam_ind_gtyped_dict)))
+        
+        return fam_ind_gtyped_dict
+        
+    
     def gene_drop(self, pop_af, cohort_af, sample_genotyped_l, gene_drop_n):
         '''Perform gene dropping across the cohort and return the proportion of iterations in which the simulated allele frequency is less than or equal to the cohort frequency.
         
@@ -230,9 +240,7 @@ class Cohort(object):
             self.logger.log("Cohort.gene_drop input parameter is None.")
             return np.NaN
         
-        ind_gtyped_grps = groupby(sample_genotyped_l, lambda x: x.split("_")[0])
-        fam_ind_gtyped_dict = OrderedDict([(fam,[id.split("_")[1] for id in list(ind_gtyped_grp)]) for fam, ind_gtyped_grp in ind_gtyped_grps])
-        self.logger.log("# families with >=1 genotyped sample: {0}".format(len(fam_ind_gtyped_dict)))
+        fam_ind_gtyped_dict = self.get_fam_ind_gtyped_dict(sample_genotyped_l)
         self.logger.log("Start gene drop with pop_af={0}, cohort_af={1}, # genotype calls={2} & gene_drop_n={3}.".format(pop_af,cohort_af,len(sample_genotyped_l),gene_drop_n))
         
         t0 = time.time()
@@ -255,10 +263,8 @@ class Cohort(object):
         if any(pd.isnull([pop_af, gene_drop_n])):
             self.logger.log("Cohort.gene_drop input parameter is None.")
             return np.NaN
-        
-        ind_gtyped_grps = groupby(sample_genotyped_l, lambda x: x.split("_")[0])
-        fam_ind_gtyped_dict = OrderedDict([(fam,[id.split("_")[1] for id in list(ind_gtyped_grp)]) for fam, ind_gtyped_grp in ind_gtyped_grps])
-        self.logger.log("# families with >=1 genotyped sample: {0}".format(len(fam_ind_gtyped_dict)))
+    
+        fam_ind_gtyped_dict = self.get_fam_ind_gtyped_dict(sample_genotyped_l)
         self.logger.log("Start gene drop with pop_af={0}, # genotype calls={1} & gene_drop_n={2}.".format(pop_af,len(sample_genotyped_l),gene_drop_n))
         
         t0 = time.time()
